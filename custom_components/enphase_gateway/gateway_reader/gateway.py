@@ -413,9 +413,9 @@ class EnvoySMetered(EnvoyS):
 
     VERBOSE_NAME = "Envoy-S Metered"
 
-    _CONS = "consumption[?(@.measurementType == '{}' && @.activeCount > 0)]"
+    _CONS = "consumption[?(@.measurementType == '{}' & @.activeCount > 0)]"
 
-    _PRODUCTION_JSON = "production[?(@.type=='eim' && @.activeCount > 0)].{}"
+    _PRODUCTION_JSON = "production[?(@.type=='eim' & @.activeCount > 0)].{}"
 
     _TOTAL_CONSUMPTION_JSON = _CONS.format("total-consumption")
 
@@ -446,7 +446,7 @@ class EnvoySMetered(EnvoyS):
     @gateway_probe(required_endpoint="ivp/meters")
     def ivp_meters_probe(self):
         """Probe the meter configuration."""
-        base_expr = "$.[?(@.state=='enabled' && @.measurementType=='{}')].eid"
+        base_expr = "$.[?(@.state=='enabled' & @.measurementType=='{}')].eid"
         self.production_meter = JsonDescriptor.resolve(
             base_expr.format("production"),
             self.data.get("ivp/meters", {}),
@@ -617,9 +617,9 @@ class EnvoySMeteredCtDisabled(EnvoyS):
 
     VERBOSE_NAME = "Envoy-S Metered without CTs"
 
-    _CONS = "consumption[?(@.measurementType == '{}' && @.activeCount > 0)]"
+    _CONS = "consumption[?(@.measurementType == '{}' & @.activeCount > 0)]"
 
-    _PRODUCTION = "production[?(@.type=='{}' && @.activeCount > 0)]"
+    _PRODUCTION = "production[?(@.type=='{}' & @.activeCount > 0)]"
 
     _PRODUCTION_INV = "production[?(@.type=='inverters')]"
 

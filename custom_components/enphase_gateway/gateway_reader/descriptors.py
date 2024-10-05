@@ -112,6 +112,7 @@ class JsonDescriptor(BaseDescriptor):
         _LOGGER.debug(f"The configured jsonpath: {path}, did return {result}")
         return result
 
+    @classmethod
     def resolve(
             cls,
             path: str,

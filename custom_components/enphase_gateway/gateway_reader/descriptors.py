@@ -5,7 +5,7 @@ import logging
 from textwrap import dedent
 
 from jsonpath import jsonpath
-from jsonpath_ng.ext import parse
+from jsonpath_ng.ext import parse, filter
 
 from .endpoint import GatewayEndpoint
 
@@ -94,7 +94,7 @@ class JsonDescriptor(BaseDescriptor):
         return self.resolve(self.jsonpath_expr, data)
 
     @classmethod
-    def resolve(cls, path: str, data: dict, default: str | int | float = None):
+    def resolve_old(cls, path: str, data: dict, default: str | int | float = None):
         """Classmethod to resolve a given JsonPath."""
         _LOGGER.debug(f"Resolving jsonpath: {path} using data: {data}")
         if path == "":
@@ -112,7 +112,7 @@ class JsonDescriptor(BaseDescriptor):
         _LOGGER.debug(f"The configured jsonpath: {path}, did return {result}")
         return result
 
-    def resolve_ng(
+    def resolve(
             cls,
             path: str,
             data: dict,

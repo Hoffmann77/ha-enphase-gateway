@@ -150,6 +150,7 @@ class BaseGateway:
         self.data = {}
         self.gateway_info = gateway_info
         self.initial_update_finished = False
+        self.resolve = JsonDescriptor.resolve
         self._required_endpoints = None
         self._probes_finished = False
 

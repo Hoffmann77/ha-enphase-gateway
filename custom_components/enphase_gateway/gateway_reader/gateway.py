@@ -681,13 +681,14 @@ class EnvoySMeteredCtDisabled(EnvoyS):
         )
 
     # HINT: Currently disabled due to inaccurate values.
-    # @gateway_property(required_endpoint="production.json")
-    # def seven_days_production(self):
-    #     """Last seven days energy production."""
-    #     return JsonDescriptor.resolve(
-    #         self._PRODUCTION.format(self.prod_type) + ".whLastSevenDays",
-    #         self.data.get("production.json", {})
-    #     )
+    @gateway_property(required_endpoint="production.json")
+    def seven_days_production(self):
+        """Last seven days energy production."""
+        return None
+        return JsonDescriptor.resolve(
+            self._PRODUCTION.format(self.prod_type) + ".whLastSevenDays",
+            self.data.get("production.json", {})
+        )
 
     @gateway_property(required_endpoint="production.json")
     def lifetime_production(self):

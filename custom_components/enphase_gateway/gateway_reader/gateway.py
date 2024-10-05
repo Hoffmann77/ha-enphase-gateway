@@ -382,7 +382,7 @@ class EnvoyS(Envoy):
     def ensemble_power(self) -> EnsemblePowerDevices | None:
         """Ensemble power data."""
         result = JsonDescriptor.resolve(
-            "devices:", self.data.get("ivp/ensemble/power", {})
+            "'devices:'", self.data.get("ivp/ensemble/power", {})
         )
         if result and isinstance(result, list):
             return EnsemblePowerDevices.from_result(result)

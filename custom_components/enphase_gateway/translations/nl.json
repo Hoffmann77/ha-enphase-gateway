@@ -1,0 +1,26 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Apparaat is al geconfigureerd",
+            "reauth_successful": "Herauthenticatie was succesvol"
+        },
+        "error": {
+            "cannot_connect": "Kan geen verbinding maken",
+            "invalid_auth": "Ongeldige authenticatie",
+            "unknown": "Onverwachte fout"
+        },
+        "flow_title": "{serial_num} ({host})",
+        "step": {
+            "user": {
+                "data": {
+                    "host": "Host",
+                    "password": "Wachtwoord",
+                    "username": "Gebruikersnaam",
+                    "serial_num": "Gateway serienummer",
+                    "use_token_auth": "Gebruik verificatie op basis van tokens"
+                },
+                "description": "- Voer voor Firmware D7.x uw aanmeldingsgegevens voor de Enlighten-website in als gebruikersnaam en wachtwoord en vink `Gebruik verificatie op basis van tokens` aan.\n -Voer voor oudere modellen de gebruikersnaam `envoy` zonder wachtwoord in of voer voor nog oudere modellen de gebruikersnaam `installer` zonder wachtwoord in.\n - Voer voor alle andere modellen een geldige gebruikersnaam en wachtwoord in."
+            }
+        }
+    }
+}

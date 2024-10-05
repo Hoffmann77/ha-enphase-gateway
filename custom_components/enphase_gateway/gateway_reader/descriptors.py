@@ -135,9 +135,11 @@ class JsonDescriptor(BaseDescriptor):
         if isinstance(result, list) and len(result) == 1:
             result = result[0]
 
+        return result
+
 
 class ModelDescriptor(BaseDescriptor):
-    
+
     def __init__(
             self,
             model_cls,

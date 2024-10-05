@@ -4,8 +4,7 @@ import re
 import logging
 from textwrap import dedent
 
-from jsonpath import jsonpath
-from jsonpath_ng.ext import parse
+from jsonpath_ng.ext import parse, filter # noqa
 
 from .endpoint import GatewayEndpoint
 
@@ -93,31 +92,27 @@ class JsonDescriptor(BaseDescriptor):
             data = obj.data or {}
         return self.resolve(self.jsonpath_expr, data)
 
+    # @classmethod
+    # def resolve_old(cls, path: str, data: dict, default: str | int | float = None):
+    #     """Classmethod to resolve a given JsonPath."""
+    #     _LOGGER.debug(f"Resolving jsonpath: {path} using data: {data}")
+    #     if path == "":
+    #         return data
+    #     result = jsonpath(data, dedent(path))
+    #     if result is False:
+    #         _LOGGER.debug(
+    #             f"The configured jsonpath: {path}, did not return anything!"
+    #         )
+    #         return default
+
+    #     if isinstance(result, list) and len(result) == 1:
+    #         result = result[0]
+
+    #     _LOGGER.debug(f"The configured jsonpath: {path}, did return {result}")
+    #     return result
+
     @classmethod
     def resolve(cls, path: str, data: dict, default: str | int | float = None):
-        """Classmethod to resolve a given JsonPath."""
-        _LOGGER.debug(f"Resolving jsonpath: {path} using data: {data}")
-        if path == "":
-            return data
-        result = jsonpath(data, dedent(path))
-        if result is False:
-            _LOGGER.debug(
-                f"The configured jsonpath: {path}, did not return anything!"
-            )
-            return default
-
-        if isinstance(result, list) and len(result) == 1:
-            result = result[0]
-
-        _LOGGER.debug(f"The configured jsonpath: {path}, did return {result}")
-        return result
-
-    def resolve_ng(
-            cls,
-            path: str,
-            data: dict,
-            default: str | int | float = None,
-    ):
         """Classmethod to resolve a given jsonpath using jsonpath-ng."""
         if path == "":
             return data
@@ -134,9 +129,11 @@ class JsonDescriptor(BaseDescriptor):
         if isinstance(result, list) and len(result) == 1:
             result = result[0]
 
+        return result
+
 
 class ModelDescriptor(BaseDescriptor):
-    
+
     def __init__(
             self,
             model_cls,

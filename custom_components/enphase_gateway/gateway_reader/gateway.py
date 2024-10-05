@@ -150,6 +150,7 @@ class BaseGateway:
         self.data = {}
         self.gateway_info = gateway_info
         self.initial_update_finished = False
+        self.resolve = JsonDescriptor.resolve
         self._required_endpoints = None
         self._probes_finished = False
 
@@ -366,7 +367,7 @@ class EnvoyS(Envoy):
     def ensemble_inventory(self) -> EnsembleInventory | None:
         """Ensemble Encharge storages."""
         result = JsonDescriptor.resolve(
-            "$.[?(@.type=='ENCHARGE')].devices",
+            "$[?(@.type=='ENCHARGE')].devices",
             self.data.get("ivp/ensemble/inventory", {}),
         )
         if result and isinstance(result, list):
@@ -381,7 +382,7 @@ class EnvoyS(Envoy):
     def ensemble_power(self) -> EnsemblePowerDevices | None:
         """Ensemble power data."""
         result = JsonDescriptor.resolve(
-            "devices:", self.data.get("ivp/ensemble/power", {})
+            "'devices:'", self.data.get("ivp/ensemble/power", {})
         )
         if result and isinstance(result, list):
             return EnsemblePowerDevices.from_result(result)
@@ -412,9 +413,9 @@ class EnvoySMetered(EnvoyS):
 
     VERBOSE_NAME = "Envoy-S Metered"
 
-    _CONS = "consumption[?(@.measurementType == '{}' && @.activeCount > 0)]"
+    _CONS = "consumption[?(@.measurementType == '{}' & @.activeCount > 0)]"
 
-    _PRODUCTION_JSON = "production[?(@.type=='eim' && @.activeCount > 0)].{}"
+    _PRODUCTION_JSON = "production[?(@.type=='eim' & @.activeCount > 0)].{}"
 
     _TOTAL_CONSUMPTION_JSON = _CONS.format("total-consumption")
 
@@ -445,7 +446,7 @@ class EnvoySMetered(EnvoyS):
     @gateway_probe(required_endpoint="ivp/meters")
     def ivp_meters_probe(self):
         """Probe the meter configuration."""
-        base_expr = "$.[?(@.state=='enabled' && @.measurementType=='{}')].eid"
+        base_expr = "$[?(@.state=='enabled' & @.measurementType=='{}')].eid"
         self.production_meter = JsonDescriptor.resolve(
             base_expr.format("production"),
             self.data.get("ivp/meters", {}),
@@ -465,7 +466,7 @@ class EnvoySMetered(EnvoyS):
         """Return grid power."""
         if eid := self.net_consumption_meter:
             return JsonDescriptor.resolve(
-                f"$.[?(@.eid=={eid})].activePower",
+                f"$[?(@.eid=={eid})].activePower",
                 self.data.get("ivp/meters/readings", {})
             )
 
@@ -476,7 +477,7 @@ class EnvoySMetered(EnvoyS):
         """Return grid import."""
         if eid := self.net_consumption_meter:
             power = JsonDescriptor.resolve(
-                f"$.[?(@.eid=={eid})].activePower",
+                f"$[?(@.eid=={eid})].activePower",
                 self.data.get("ivp/meters/readings", {})
             )
             if isinstance(power, (int, float)):
@@ -489,7 +490,7 @@ class EnvoySMetered(EnvoyS):
         """Return lifetime grid import."""
         if eid := self.net_consumption_meter:
             return JsonDescriptor.resolve(
-                f"$.[?(@.eid=={eid})].actEnergyDlvd",
+                f"$[?(@.eid=={eid})].actEnergyDlvd",
                 self.data.get("ivp/meters/readings", {})
             )
 
@@ -500,7 +501,7 @@ class EnvoySMetered(EnvoyS):
         """Return grid export."""
         if eid := self.net_consumption_meter:
             power = JsonDescriptor.resolve(
-                f"$.[?(@.eid=={eid})].activePower",
+                f"$[?(@.eid=={eid})].activePower",
                 self.data.get("ivp/meters/readings", {})
             )
             if isinstance(power, (int, float)):
@@ -513,7 +514,7 @@ class EnvoySMetered(EnvoyS):
         """Return lifetime grid export."""
         if eid := self.net_consumption_meter:
             return JsonDescriptor.resolve(
-                f"$.[?(@.eid=={eid})].actEnergyRcvd",
+                f"$[?(@.eid=={eid})].actEnergyRcvd",
                 self.data.get("ivp/meters/readings", {})
             )
 
@@ -523,7 +524,7 @@ class EnvoySMetered(EnvoyS):
     def production(self):
         """Return the measured active power."""
         return JsonDescriptor.resolve(
-            f"$.[?(@.eid=={self.production_meter})].activePower",
+            f"$[?(@.eid=={self.production_meter})].activePower",
             self.data.get("ivp/meters/readings", {})
         )
 
@@ -549,7 +550,7 @@ class EnvoySMetered(EnvoyS):
     def lifetime_production(self):
         """Return the lifetime energy production."""
         return JsonDescriptor.resolve(
-            f"$.[?(@.eid=={self.production_meter})].actEnergyDlvd",
+            f"$[?(@.eid=={self.production_meter})].actEnergyDlvd",
             self.data.get("ivp/meters/readings", {})
         )
 
@@ -559,14 +560,14 @@ class EnvoySMetered(EnvoyS):
         if eid := self.net_consumption_meter:
             prod = self.production
             cons = JsonDescriptor.resolve(
-                f"$.[?(@.eid=={eid})].activePower",
+                f"$[?(@.eid=={eid})].activePower",
                 self.data.get("ivp/meters/readings", {})
             )
             if prod and cons:
                 return prod + cons
         elif eid := self.total_consumption_meter:
             return JsonDescriptor.resolve(
-                f"$.[?(@.eid=={eid})].activePower",
+                f"$[?(@.eid=={eid})].activePower",
                 self.data.get("ivp/meters/readings", {})
             )
 
@@ -596,7 +597,7 @@ class EnvoySMetered(EnvoyS):
         if eid := self.net_consumption_meter:
             prod = self.lifetime_production
             cons = JsonDescriptor.resolve(
-                f"$.[?(@.eid=={eid})]",
+                f"$[?(@.eid=={eid})]",
                 self.data.get("ivp/meters/readings", {})
             )
             if prod and cons:
@@ -604,7 +605,7 @@ class EnvoySMetered(EnvoyS):
         elif eid := self.total_consumption_meter:
             # TODO: collect fixtures and validate
             return JsonDescriptor.resolve(
-                f"$.[?(@.eid=={eid})].actEnergyRcvd",
+                f"$[?(@.eid=={eid})].actEnergyRcvd",
                 self.data.get("ivp/meters/readings", {})
             )
 
@@ -616,9 +617,9 @@ class EnvoySMeteredCtDisabled(EnvoyS):
 
     VERBOSE_NAME = "Envoy-S Metered without CTs"
 
-    _CONS = "consumption[?(@.measurementType == '{}' && @.activeCount > 0)]"
+    _CONS = "consumption[?(@.measurementType == '{}' & @.activeCount > 0)]"
 
-    _PRODUCTION = "production[?(@.type=='{}' && @.activeCount > 0)]"
+    _PRODUCTION = "production[?(@.type=='{}' & @.activeCount > 0)]"
 
     _PRODUCTION_INV = "production[?(@.type=='inverters')]"
 
@@ -680,13 +681,14 @@ class EnvoySMeteredCtDisabled(EnvoyS):
         )
 
     # HINT: Currently disabled due to inaccurate values.
-    # @gateway_property(required_endpoint="production.json")
-    # def seven_days_production(self):
-    #     """Last seven days energy production."""
-    #     return JsonDescriptor.resolve(
-    #         self._PRODUCTION.format(self.prod_type) + ".whLastSevenDays",
-    #         self.data.get("production.json", {})
-    #     )
+    @gateway_property(required_endpoint="production.json")
+    def seven_days_production(self):
+        """Last seven days energy production."""
+        return None
+        return JsonDescriptor.resolve(
+            self._PRODUCTION.format(self.prod_type) + ".whLastSevenDays",
+            self.data.get("production.json", {})
+        )
 
     @gateway_property(required_endpoint="production.json")
     def lifetime_production(self):

@@ -82,7 +82,7 @@ class GatewayCoordinator(DataUpdateCoordinator):
 
     @staticmethod
     async def async_remove_store(
-        cls, hass: HomeAssistant, entry: ConfigEntry
+        hass: HomeAssistant, entry: ConfigEntry
     ) -> None:
         """Remove all data from the store."""
         store = Store(

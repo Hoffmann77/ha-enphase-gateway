@@ -461,7 +461,7 @@ class EnphaseTokenAuth(GatewayAuth):
     async def _token_refreshed(self):
         """Signal for refreshed token."""
         if self._cache_token:
-            self._save_token_to_cache(self.token)
+            await self._save_token_to_cache(self.token)
 
     async def _load_token_from_cache(self) -> str | None:
         """Return the cached token."""

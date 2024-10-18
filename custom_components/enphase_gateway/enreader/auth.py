@@ -17,8 +17,8 @@ from .exceptions import (
     GatewayAuthenticationError,
     GatewayCommunicationError,
     InvalidTokenError,
-    TokenAuthConfigError,
-    TokenRetrievalError,
+    # TokenAuthConfigError,
+    # TokenRetrievalError,
 )
 
 

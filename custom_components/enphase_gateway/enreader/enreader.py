@@ -45,6 +45,7 @@ class GatewayReader:
             self,
             host: str,
             async_client: httpx.AsyncClient,
+            # For the future:
             # client_verify_ssl: httpx.AsyncClient,
             # client_no_verify_ssl: httpx.AsyncClient,
     ) -> None:
@@ -72,6 +73,9 @@ class GatewayReader:
         self.auth = None
         self.gateway = None
         self._async_client = async_client
+        # For the future:
+        # self._client_verify_ssl = client_verify_ssl
+        # self._client_no_verify_ssl = client_no_verify_ssl
         self._info = GatewayInfo(self.host, self._async_client)
 
     @property

@@ -48,7 +48,7 @@ STALE_TOKEN_THRESHOLD = timedelta(days=3).total_seconds()
 _LOGGER = logging.getLogger(__name__)
 
 
-class GatewayCoordinator(DataUpdateCoordinator):
+class GatewayUpdateCoordinator(DataUpdateCoordinator):
     """DataUpdateCoordinator for gateway reader."""
 
     def __init__(
@@ -77,15 +77,12 @@ class GatewayCoordinator(DataUpdateCoordinator):
             # always_update=False, # TODO: Added in ha 2023.9
         )
 
-    @staticmethod
-    async def async_remove_store(
-        hass: HomeAssistant, entry: ConfigEntry
-    ) -> None:
+    async def async_remove_store(self) -> None:
         """Remove all data from the store."""
         store = Store(
-            hass,
+            self.hass,
             STORAGE_VERSION,
-            ".".join([STORAGE_KEY, entry.entry_id]),
+            ".".join([STORAGE_KEY, self.config_entry.entry_id]),
         )
         await store.async_remove()
 

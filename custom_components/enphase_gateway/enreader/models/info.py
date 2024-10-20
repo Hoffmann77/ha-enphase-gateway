@@ -15,7 +15,7 @@ class Info:
 
     serial_number: str | None = None
     part_number: str | None = None
-    firmware_version: AwesomeVersion | None
+    firmware_version: AwesomeVersion | None = None
     imeter: bool = False
     web_tokens: bool = False
 

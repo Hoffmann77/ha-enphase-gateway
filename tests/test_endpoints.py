@@ -74,7 +74,6 @@ async def get_gateway(fixture_name):
     #     "username",
     #     "password",
     # )
-    print("Required endpoints: ", gateway_reader.gateway.required_endpoints)
     for endpoint in gateway_reader.gateway.required_endpoints:
         return_value = await gen_response(fixture_name, endpoint.path)
         respx.get(f"/{endpoint.path}").mock(return_value=return_value)
@@ -99,6 +98,7 @@ async def test_with_3_7_0_firmware():
     gateway = await get_gateway(fixture_name)
 
     assert gateway.__class__.__name__ == gateway_class
+    print(gateway.data)
 
     # production data
     assert gateway.production == 6.63 * 1000

@@ -15,6 +15,7 @@ from .const import LEGACY_ENVOY_VERSION
 from .gateway_info import GatewayInfo
 from .auth import LegacyAuth, EnphaseTokenAuth
 from .exceptions import GatewayAuthenticationRequired, GatewaySetupError
+from .models import Info
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -126,10 +127,11 @@ class GatewayReader:
             DESCRIPTION.
 
         """
-        await self._info.update()
-        assert self.serial_number is not None
+        info = await self._get_info()
 
-        if self._info.web_tokens:
+        assert info.serial_number is not None
+
+        if info.web_tokens:
             # Firmware using token based authentication
             if token or (username and password):
                 self.auth = EnphaseTokenAuth(
@@ -167,7 +169,7 @@ class GatewayReader:
         await self.auth.setup(self._async_client)
 
         # Detect the correct gateway class.
-        await self._detect_model()
+        await self._detect_model(info)
 
         _LOGGER.debug(
             "Gateway info: "
@@ -215,23 +217,35 @@ class GatewayReader:
                 continue
 
             url = endpoint.get_url(self.auth.protocol, self.host)
-            response = await self._async_get(url, follow_redirects=False)
+            response = await self._async_get(
+                url, handle_401=True, follow_redirects=False)
 
             endpoint.success()
 
             self.gateway.set_endpoint_data(endpoint, response)
 
-    async def _detect_model(self) -> None:
+    async def _get_info(self) -> Info:
+        """Return the Info model."""
+        try:
+            response = await self._async_get(f"https://{self.host}/info")
+        except (httpx.ConnectError, httpx.TimeoutException):
+            # Firmware < 7.0.0 does not support HTTPS so we need to try HTTP.
+            # Worse sometimes http will redirect to https://localhost.
+            response = await self._request(f"http://{self.host}/info")
+
+        return Info.from_response(response)
+
+    async def _detect_model(self, info: Info) -> None:
         """Detect the Enphase gateway model.
 
         Detect the gateway model based on info.xml parmeters.
 
         """
-        if self.firmware_version < LEGACY_ENVOY_VERSION:
+        if info.firmware_version < LEGACY_ENVOY_VERSION:
             self.gateway = EnvoyLegacy()
-        elif self._info.imeter and self._info.imeter == "true":
+        elif info.imeter:
             self.gateway = EnvoySMetered()
-        elif self._info.imeter and self._info.imeter == "false":
+        elif not info.imeter:
             self.gateway = EnvoyS()
         else:
             self.gateway = Envoy()
@@ -242,8 +256,39 @@ class GatewayReader:
         self.gateway.run_probes()
         if subclass := self.gateway.get_subclass():
             self.gateway = subclass
-
-    async def _async_get(self, url: str, handle_401: bool = True, **kwargs):
+    
+    # async def _request(
+    #     self,
+    #     url: str,
+    #     handle_401: bool = False,
+    #     **kwargs
+    # ) -> httpx.Response:
+    #     """Send a request to the Enphase gateway."""
+    
+    
+    
+    
+    # for attempt in range(1, retries+2):
+    #     _base_msg = f"HTTP GET Attempt #{attempt}: {url}"
+    #     try:
+    #         resp = await async_client.get(url, **kwargs)
+    #         if raise_for_status:
+    #             resp.raise_for_status()
+    #     except httpx.TransportError as err:
+    #         if attempt >= retries+1:
+    #             _LOGGER.debug(f"{_base_msg}: Transport Error: {err}")
+    #             raise err
+    #         else:
+    #             await asyncio.sleep(attempt * 0.10)
+    #             continue
+    #     else:
+    #         _LOGGER.debug(
+    #             f"{_base_msg}: Response: {resp}: length: {len(resp.text)}"
+    #         )
+    #         return resp
+    
+    
+    async def _async_get(self, url: str, handle_401: bool = False, **kwargs):
         """Make a HTTP GET request to the gateway."""
         try:
             resp = await async_get(

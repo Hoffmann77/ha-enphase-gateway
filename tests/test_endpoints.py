@@ -8,8 +8,11 @@ import respx
 import pytest
 from httpx import Response
 
-from custom_components.enphase_gateway.gateway_reader import GatewayReader
-from custom_components.enphase_gateway.gateway_reader.auth import LegacyAuth
+# from custom_components.enphase_gateway.gateway_reader import GatewayReader
+# from custom_components.enphase_gateway.gateway_reader.auth import LegacyAuth
+from custom_components.gateway_reader.enreader import GatewayReader
+from custom_components.gateway_reader.auth import LegacyAuth
+
 
 _LOGGER = logging.getLogger(__name__)
 

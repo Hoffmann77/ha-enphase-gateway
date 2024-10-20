@@ -6,3 +6,4 @@ from .ensemble import (
     EnsemblePower,
     EnsemblePowerDevices,
 )
+from .info import Info

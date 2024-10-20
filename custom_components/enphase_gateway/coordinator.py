@@ -48,6 +48,9 @@ STALE_TOKEN_THRESHOLD = timedelta(days=3).total_seconds()
 _LOGGER = logging.getLogger(__name__)
 
 
+type EnphaseGatewayConfigEntry = ConfigEntry[GatewayUpdateCoordinator]
+
+
 class GatewayUpdateCoordinator(DataUpdateCoordinator):
     """DataUpdateCoordinator for gateway reader."""
 

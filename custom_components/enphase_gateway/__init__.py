@@ -10,16 +10,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.httpx_client import get_async_client
 
 from .enreader import GatewayReader
-from .coordinator import GatewayUpdateCoordinator
+from .coordinator import GatewayUpdateCoordinator, EnphaseGatewayConfigEntry
 from .const import (
     DOMAIN, PLATFORMS, CONF_ENCHARGE_ENTITIES, CONF_INVERTERS
 )
 
 
 _LOGGER = logging.getLogger(__name__)
-
-
-type EnphaseGatewayConfigEntry = ConfigEntry[GatewayUpdateCoordinator]
 
 
 async def async_setup_entry(

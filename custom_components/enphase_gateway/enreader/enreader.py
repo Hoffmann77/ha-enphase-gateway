@@ -200,6 +200,7 @@ class GatewayReader:
         if self.gateway.initial_update_finished is False:
             self.update_endpoints(required_endpoints, force_update=True)
             self.gateway.initial_update_finished = True
+
         else:
             self.update_endpoints(required_endpoints)
 
@@ -221,6 +222,7 @@ class GatewayReader:
         _LOGGER.debug(f"Updating endpoints: {endpoints}")
 
         for endpoint in endpoints:
+            print("endpoint: {endpoint} update required {endpoint.update_required}")
             if not endpoint.update_required and not force_update:
                 continue
 

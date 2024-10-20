@@ -78,6 +78,8 @@ async def get_gateway(fixture_name):
         return_value = await gen_response(fixture_name, endpoint.path)
         respx.get(f"/{endpoint.path}").mock(return_value=return_value)
 
+    # Update two times to verify the gateway does not drop the required
+    # endpoints that are actually required.
     await gateway_reader.update()
     await gateway_reader.update()
     return gateway_reader.gateway

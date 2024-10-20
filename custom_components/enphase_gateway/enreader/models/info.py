@@ -24,7 +24,7 @@ class Info:
         """Instantiate the Info model from the response."""
         xml = etree.fromstring(response.content)
 
-        if (fw := xml.find("device/software") is not None):
+        if (fw := xml.find("device/software")):
             firmware_version = AwesomeVersion(fw.text[1:])
         else:
             firmware_version = None

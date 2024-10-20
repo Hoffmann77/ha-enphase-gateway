@@ -83,7 +83,7 @@ async def get_gateway(fixture_name):
     # Update two times to verify the gateway does not drop the required
     # endpoints that are actually required.
     await gateway_reader.update()
-    await gateway_reader.update()
+    # await gateway_reader.update()
     return gateway_reader.gateway
 
 

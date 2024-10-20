@@ -68,12 +68,12 @@ async def get_gateway(fixture_name):
     )
 
     gateway_reader = GatewayReader("127.0.0.1")
-    await gateway_reader.prepare()
-    gateway_reader.auth = LegacyAuth(
-        gateway_reader.host,
-        "username",
-        "password",
-    )
+    await gateway_reader.authenticate("username", "password")
+    # gateway_reader.auth = LegacyAuth(
+    #     gateway_reader.host,
+    #     "username",
+    #     "password",
+    # )
 
     for endpoint in gateway_reader.gateway.required_endpoints:
         return_value = await gen_response(fixture_name, endpoint.path)

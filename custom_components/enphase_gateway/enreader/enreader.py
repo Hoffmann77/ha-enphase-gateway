@@ -146,12 +146,12 @@ class GatewayReader:
             if not username or username == "installer":
                 username = "installer"
                 password = EnvoyUtils.get_password(
-                    self.serial_number, username
+                    info.serial_number, username
                 )
             elif username == "envoy" and not password:
                 # The default password for the envoy user
                 # is the last 6 digits of the serial number.
-                password = self.serial_number[:6]
+                password = info.serial_number[:6]
 
             if username and password:
                 self.auth = LegacyAuth(self.host, username, password)

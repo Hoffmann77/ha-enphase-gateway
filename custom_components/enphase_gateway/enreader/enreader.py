@@ -298,6 +298,14 @@ class GatewayReader:
     
     async def _async_get(self, url: str, handle_401: bool = False, **kwargs):
         """Make a HTTP GET request to the gateway."""
+        # TODO: How to handle async get if self.auth is None.
+        # This is the case when getting the /info endpoint.
+        if self.auth:
+            headers, cookies = self.auth.headers, self.auth.cookies
+            auth = self.auth.auth
+        else:
+            headers = cookies = auth = None
+
         try:
             resp = await async_get(
                 self._async_client,

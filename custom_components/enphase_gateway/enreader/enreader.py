@@ -310,9 +310,9 @@ class GatewayReader:
             resp = await async_get(
                 self._async_client,
                 url,
-                headers=self.auth.headers,
-                cookies=self.auth.cookies,
-                auth=self.auth.auth,
+                headers=headers,
+                cookies=cookies,
+                auth=auth,
                 **kwargs
             )
         except httpx.HTTPStatusError as err:

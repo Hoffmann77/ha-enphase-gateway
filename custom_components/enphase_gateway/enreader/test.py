@@ -18,6 +18,12 @@ from awesomeversion import AwesomeVersion
 
 def test():
     
+    x = {}
+    v = x.values()
+    print(type(v))
+    return
+    
+    
     response = httpx.get("http://envoy.local/info.xml")
     
     xml = etree.fromstring(response.content)

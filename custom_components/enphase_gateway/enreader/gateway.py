@@ -196,7 +196,7 @@ class BaseGateway:
             List containing all required endpoints.
 
         """
-        if self._required_endpoints:
+        if self._required_endpoints is not None:
             return self._required_endpoints.values
 
         endpoints = EndpointCollection()

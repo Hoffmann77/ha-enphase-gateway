@@ -251,10 +251,12 @@ class GatewayReader:
         """
         if info.firmware_version < LEGACY_ENVOY_VERSION:
             self.gateway = EnvoyLegacy()
-        elif info.imeter:
-            self.gateway = EnvoySMetered()
-        elif not info.imeter:
-            self.gateway = EnvoyS()
+        elif info.imeter is not None:
+            # info.xml has the `imeter` tag.
+            if info.imeter:
+                self.gateway = EnvoySMetered()
+            else:
+                self.gateway = EnvoyS()
         else:
             self.gateway = Envoy()
 

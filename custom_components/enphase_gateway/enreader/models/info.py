@@ -16,8 +16,8 @@ class Info:
     serial_number: str | None = None
     part_number: str | None = None
     firmware_version: AwesomeVersion | None = None
-    imeter: bool = False
-    web_tokens: bool = False
+    imeter: bool | None = None
+    web_tokens: bool | None = None
 
     @classmethod
     def from_response(cls, response: httpx.Response) -> Info:
@@ -29,10 +29,16 @@ class Info:
         else:
             firmware_version = None
 
+        if (imeter := xml.findtext("device/imeter")) is not None:
+            imeter = bool(imeter)
+
+        if (web_tokens := xml.findtext("device/web-tokens")) is not None:
+            web_tokens = bool(web_tokens)
+
         return cls(
             serial_number=xml.findtext("device/sn"),
             part_number=xml.findtext("device/pn"),
             firmware_version=firmware_version,
-            imeter=bool(xml.findtext("device/imeter")),
-            web_tokens=bool(xml.findtext("web-tokens")),
+            imeter=imeter,
+            web_tokens=web_tokens,
         )

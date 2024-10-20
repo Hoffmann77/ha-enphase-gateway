@@ -9,6 +9,8 @@ import logging
 import httpx
 from lxml import etree
 
+from awesomeversion import AwesomeVersion
+
 #from const import AVAILABLE_PROPERTIES
 #from endpoint import GatewayEndpoint
 #from descriptors import ResponseDescriptor, JsonDescriptor, RegexDescriptor, PropertyDescriptor
@@ -23,6 +25,9 @@ def test():
     
     find = xml.findtext("web-tokens1")
     
+    if fw := xml.find("device/software"):
+        firmware = AwesomeVersion(fw.text[1:])
+        print(firmware)
     
     print(bool(find))
 

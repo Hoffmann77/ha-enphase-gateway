@@ -73,11 +73,19 @@ class GatewayReader:
 
         self.auth = None
         self.gateway = None
-        self._async_client = async_client
+        self._async_client = async_client or self._get_async_client()
         # For the future:
         # self._client_verify_ssl = client_verify_ssl
         # self._client_no_verify_ssl = client_no_verify_ssl
         self._info = GatewayInfo(self.host, self._async_client)
+    
+    # Required for endpoint tests
+    def _get_async_client(self) -> httpx.AsyncClient:
+        """Return default httpx client."""
+        return httpx.AsyncClient(
+            verify=False,
+            timeout=10
+        )
 
     @property
     def name(self) -> str | None:

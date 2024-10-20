@@ -222,7 +222,6 @@ class GatewayReader:
         _LOGGER.debug(f"Updating endpoints: {endpoints}")
 
         for endpoint in endpoints:
-            print("endpoint: {endpoint} update required {endpoint.update_required}")
             if not endpoint.update_required and not force_update:
                 continue
 

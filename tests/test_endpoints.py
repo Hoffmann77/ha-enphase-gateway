@@ -75,6 +75,8 @@ async def get_gateway(fixture_name):
     #     "password",
     # )
 
+    print(gateway_reader.gateway)
+
     for endpoint in gateway_reader.gateway.required_endpoints:
         return_value = await gen_response(fixture_name, endpoint.path)
         respx.get(f"/{endpoint.path}").mock(return_value=return_value)

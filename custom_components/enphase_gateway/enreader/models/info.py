@@ -21,7 +21,7 @@ class Info:
 
     @classmethod
     def from_response(cls, response: httpx.Response) -> Info:
-        """Instantiate the Info model from the response."""
+        """Instantiate the instance from a response."""
         xml = etree.fromstring(response.content)
 
         if (fw := xml.find("device/software")) is not None:

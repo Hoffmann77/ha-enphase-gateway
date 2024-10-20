@@ -45,7 +45,7 @@ class GatewayReader:
     def __init__(
             self,
             host: str,
-            async_client: httpx.AsyncClient,
+            async_client: httpx.AsyncClient | None = None,
             # For the future:
             # client_verify_ssl: httpx.AsyncClient,
             # client_no_verify_ssl: httpx.AsyncClient,

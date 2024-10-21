@@ -78,7 +78,7 @@ class GatewayReader:
         # self._client_verify_ssl = client_verify_ssl
         # self._client_no_verify_ssl = client_no_verify_ssl
         self._info = GatewayInfo(self.host, self._async_client)
-    
+
     # Required for endpoint tests
     def _get_async_client(self) -> httpx.AsyncClient:
         """Return default httpx client."""
@@ -267,7 +267,7 @@ class GatewayReader:
         self.gateway.run_probes()
         if subclass := self.gateway.get_subclass():
             self.gateway = subclass
-    
+
     # async def _request(
     #     self,
     #     url: str,
@@ -275,10 +275,10 @@ class GatewayReader:
     #     **kwargs
     # ) -> httpx.Response:
     #     """Send a request to the Enphase gateway."""
-    
-    
-    
-    
+
+
+
+
     # for attempt in range(1, retries+2):
     #     _base_msg = f"HTTP GET Attempt #{attempt}: {url}"
     #     try:
@@ -297,8 +297,8 @@ class GatewayReader:
     #             f"{_base_msg}: Response: {resp}: length: {len(resp.text)}"
     #         )
     #         return resp
-    
-    
+
+
     async def _async_get(self, url: str, handle_401: bool = False, **kwargs):
         """Make a HTTP GET request to the gateway."""
         # TODO: How to handle async get if self.auth is None.

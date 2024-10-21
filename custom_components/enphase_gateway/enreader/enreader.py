@@ -198,10 +198,12 @@ class GatewayReader:
         required_endpoints = self.gateway.required_endpoints
 
         if self.gateway.initial_update_finished is False:
+            _LOGGER.debug("Run the initial update of the gateway's data")
             self.update_endpoints(required_endpoints, force_update=True)
             self.gateway.initial_update_finished = True
 
         else:
+            _LOGGER.debug("Updating the gateway's data")
             self.update_endpoints(required_endpoints)
 
     async def update_endpoints(
@@ -223,11 +225,13 @@ class GatewayReader:
 
         for endpoint in endpoints:
             if not endpoint.update_required and not force_update:
+                _LOGGER.debug(f"Skipping endpoint: {endpoint}")
                 continue
 
             url = endpoint.get_url(self.auth.protocol, self.host)
             response = await self._async_get(
-                url, handle_401=True, follow_redirects=False)
+                url, handle_401=True, follow_redirects=False
+            )
 
             endpoint.success()
 

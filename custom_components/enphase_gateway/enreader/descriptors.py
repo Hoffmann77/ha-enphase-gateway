@@ -144,7 +144,7 @@ class ModelDescriptor(BaseDescriptor):
         super().__init__(required_endpoint, cache)
         self.model_cls = model_cls
         self.jsonpath_expr = jsonpath_expr
-        
+
     def __get__(self, obj, objtype=None):
         """Magic method. Resolve the jasonpath expression."""
         if self._required_endpoint:
@@ -153,13 +153,13 @@ class ModelDescriptor(BaseDescriptor):
             data = obj.data or {}
 
         return self.resolve(self.jsonpath_expr, data)
-    
+
     def resolve(cls, jsonpath_expr, model_cls, data):
-        
+
         result = JsonDescriptor.resolve(jsonpath_expr, data)
         if result is not None:
             return model_cls.from_result(result)
-        
+
 
 
 class RegexDescriptor(BaseDescriptor):
@@ -178,6 +178,9 @@ class RegexDescriptor(BaseDescriptor):
     def resolve(cls, regex: str, data: str):
         """Classmethod to resolve a given REGEX."""
         text = data
+        _LOGGER.debug(
+            f"The text: {text}"
+        )
         match = re.search(regex, text, re.MULTILINE)
         if match:
             if match.group(2) in {"kW", "kWh"}:

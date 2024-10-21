@@ -181,7 +181,7 @@ class GatewayReader:
         await self._detect_model(info)
 
         _LOGGER.debug(
-            "Authentication finished: "
+            "Authentication complete: "
             + f"part_number: {self._info.part_number}, "
             + f"firmware_version: {self._info.firmware_version}, "
             + f"imeter: {self._info.imeter}, "
@@ -200,12 +200,12 @@ class GatewayReader:
 
         if self.gateway.initial_update_finished is False:
             _LOGGER.debug("Updating reader, initial_update_finished=False")
-            self.update_endpoints(required_endpoints, force_update=True)
+            await self.update_endpoints(required_endpoints, force_update=True)
             self.gateway.initial_update_finished = True
 
         else:
             _LOGGER.debug("Updating reader, initial_update_finished=True")
-            self.update_endpoints(required_endpoints)
+            await self.update_endpoints(required_endpoints)
 
     async def update_endpoints(
         self,
@@ -255,7 +255,7 @@ class GatewayReader:
         Detect the gateway model based on info.xml parmeters.
 
         """
-        _LOGGER.debug("Starting detecting of the gateway model")
+        _LOGGER.debug("Detecting gateway model...")
 
         if info.firmware_version < LEGACY_ENVOY_VERSION:
             self.gateway = EnvoyLegacy()

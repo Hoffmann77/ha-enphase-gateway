@@ -135,6 +135,7 @@ class GatewayReader:
             DESCRIPTION.
 
         """
+        _LOGGER.debug("Starting authentication process...")
         info = await self._get_info()
 
         assert info.serial_number is not None
@@ -180,13 +181,13 @@ class GatewayReader:
         await self._detect_model(info)
 
         _LOGGER.debug(
-            "Gateway info: "
+            "Authentication finished: "
             + f"part_number: {self._info.part_number}, "
             + f"firmware_version: {self._info.firmware_version}, "
             + f"imeter: {self._info.imeter}, "
-            + f"web_tokens: {self._info.web_tokens}"
-            + f"Gateway class: {self.gateway.__class__.__name__}"
-            + f"Authentication class: {self.auth.__class__.__name__}"
+            + f"web_tokens: {self._info.web_tokens}, "
+            + f"Gateway class: {self.gateway.__class__.__name__}, "
+            + f"Authentication class: {self.auth.__class__.__name__}, "
         )
 
     async def update(self) -> None:
@@ -198,12 +199,12 @@ class GatewayReader:
         required_endpoints = self.gateway.required_endpoints
 
         if self.gateway.initial_update_finished is False:
-            _LOGGER.debug("Run the initial update of the gateway's data")
+            _LOGGER.debug("Updating reader, initial_update_finished=False")
             self.update_endpoints(required_endpoints, force_update=True)
             self.gateway.initial_update_finished = True
 
         else:
-            _LOGGER.debug("Updating the gateway's data")
+            _LOGGER.debug("Updating reader, initial_update_finished=True")
             self.update_endpoints(required_endpoints)
 
     async def update_endpoints(
@@ -254,6 +255,8 @@ class GatewayReader:
         Detect the gateway model based on info.xml parmeters.
 
         """
+        _LOGGER.debug("Starting detecting of the gateway model")
+
         if info.firmware_version < LEGACY_ENVOY_VERSION:
             self.gateway = EnvoyLegacy()
         elif info.imeter is not None:
@@ -265,12 +268,21 @@ class GatewayReader:
         else:
             self.gateway = Envoy()
 
+        _LOGGER.debug(
+            f"Detected meta model: {self.gateway.__class__.__name__}, "
+            + "updating data for the gateway probes..."
+        )
         self.update_endpoints(
             self.gateway.probing_endpoints, force_update=True
         )
+
+        _LOGGER.debug("Running gateway probes...")
         self.gateway.run_probes()
         if subclass := self.gateway.get_subclass():
             self.gateway = subclass
+
+        _LOGGER.debug(f"Gateway model: {self.gateway.__class__.__name__}")
+
 
     # async def _request(
     #     self,

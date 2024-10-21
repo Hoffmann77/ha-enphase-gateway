@@ -105,6 +105,7 @@ class LegacyAuth(GatewayAuth):
 
     async def setup(self, client: httpx.AsyncClient) -> None:
         """Set up the authentication method."""
+        _LOGGER.debug("Setting up `LegacyAuth` instance.")
         pass
 
     async def refresh(self, client: httpx.AsyncClient) -> None:
@@ -251,6 +252,7 @@ class EnphaseTokenAuth(GatewayAuth):
             Raised if the authentication failed.
 
         """
+        _LOGGER.debug("Setting up `EnphaseTokenAuth` instance.")
         if not self._token:
             self._refresh_token()
 

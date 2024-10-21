@@ -76,8 +76,9 @@ async def get_gateway(fixture_name):
     # )
     for endpoint in gateway_reader.gateway.required_endpoints:
         print(f"endpoint: {endpoint} update required {endpoint.update_required}")
-        
+
         return_value = await gen_response(fixture_name, endpoint.path)
+        print(f"return value: {return_value}")
         respx.get(f"/{endpoint.path}").mock(return_value=return_value)
 
     # Update two times to verify the gateway does not drop the required

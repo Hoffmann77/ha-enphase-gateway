@@ -8,8 +8,11 @@ import respx
 import pytest
 from httpx import Response
 
-from custom_components.enphase_gateway.gateway_reader import GatewayReader
-from custom_components.enphase_gateway.gateway_reader.auth import LegacyAuth
+# from custom_components.enphase_gateway.gateway_reader import GatewayReader
+# from custom_components.enphase_gateway.gateway_reader.auth import LegacyAuth
+from custom_components.enphase_gateway.enreader import GatewayReader
+from custom_components.enphase_gateway.enreader.auth import LegacyAuth
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -65,17 +68,20 @@ async def get_gateway(fixture_name):
     )
 
     gateway_reader = GatewayReader("127.0.0.1")
-    await gateway_reader.prepare()
-    gateway_reader.auth = LegacyAuth(
-        gateway_reader.host,
-        "username",
-        "password",
-    )
-
+    await gateway_reader.authenticate("username", "password")
+    # gateway_reader.auth = LegacyAuth(
+    #     gateway_reader.host,
+    #     "username",
+    #     "password",
+    # )
     for endpoint in gateway_reader.gateway.required_endpoints:
         return_value = await gen_response(fixture_name, endpoint.path)
         respx.get(f"/{endpoint.path}").mock(return_value=return_value)
 
+    print(gateway_reader.gateway.required_endpoints)
+
+    # Update two times to verify the gateway does not drop the required
+    # endpoints that are actually required.
     await gateway_reader.update()
     await gateway_reader.update()
     return gateway_reader.gateway
@@ -96,6 +102,7 @@ async def test_with_3_7_0_firmware():
     gateway = await get_gateway(fixture_name)
 
     assert gateway.__class__.__name__ == gateway_class
+    print(gateway.data)
 
     # production data
     assert gateway.production == 6.63 * 1000

@@ -493,7 +493,7 @@ class EnvoySMetered(EnvoyS):
 
         return None
 
-    @gateway_probe(required_endpoint="ivp/meters")
+    @gateway_probe(endpoint="ivp/meters")
     def ivp_meters_probe(self, data):
         """Probe the meter configuration."""
         base_expr = "$[?(@.state=='enabled' & @.measurementType=='{}')].eid"

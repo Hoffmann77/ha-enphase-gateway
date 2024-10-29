@@ -493,20 +493,20 @@ class EnvoySMetered(EnvoyS):
         return None
 
     @gateway_probe(endpoint="/ivp/meters")
-    def ivp_meters_probe(self, data):
+    def ivp_meters_probe(self, data: dict | None):
         """Probe the meter configuration."""
         base_expr = "$[?(@.state=='enabled' & @.measurementType=='{}')].eid"
         self.production_meter = JsonDescriptor.resolve(
             base_expr.format("production"),
-            self.data.get("/ivp/meters", {}),
+            data.get("/ivp/meters", {}),
         )
         self.net_consumption_meter = JsonDescriptor.resolve(
             base_expr.format("net-consumption"),
-            self.data.get("/ivp/meters", {}),
+            data.get("/ivp/meters", {}),
         )
         self.total_consumption_meter = JsonDescriptor.resolve(
             base_expr.format("total-consumption"),
-            self.data.get("/ivp/meters", {}),
+            data.get("/ivp/meters", {}),
         )
         _LOGGER.debug("Probe: 'ivp_meters_probe' finished")
 

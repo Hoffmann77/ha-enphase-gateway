@@ -96,35 +96,3 @@ class GatewayFixture:
         """Load the fixture."""
         with open(self._fixture_dir.joinpath(fpath)) as f:
             return f.read()
-
-
-
-
-
-
-@respx.mock
-async def get_gateway(fixture_name):
-    """Get the gateway."""
-    # mock the info endpoint
-    respx.get("/info").mock(
-        return_value=Response(200, text=load_fixture(fixture_name, "info"))
-    )
-
-    gateway_reader = GatewayReader("127.0.0.1")
-    await gateway_reader.authenticate("username", "password")
-    # gateway_reader.auth = LegacyAuth(
-    #     gateway_reader.host,
-    #     "username",
-    #     "password",
-    # )
-    for endpoint in gateway_reader.gateway.required_endpoints:
-        return_value = await gen_response(fixture_name, endpoint.path)
-        respx.get(f"/{endpoint.path}").mock(return_value=return_value)
-
-    print(gateway_reader.gateway.required_endpoints)
-
-    # Update two times to verify the gateway does not drop the required
-    # endpoints that are actually required.
-    await gateway_reader.update()
-    await gateway_reader.update()
-    return gateway_reader.gateway

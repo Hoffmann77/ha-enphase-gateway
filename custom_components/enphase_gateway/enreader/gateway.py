@@ -290,7 +290,7 @@ class EnphaseGateway:
         """Run the gateway probes."""
         data = {}
         for endpoint in self.probing_endpoints:
-            data[endpoint.path] = endpoint.fetch(_request)
+            data[endpoint.path] = await endpoint.fetch(_request)
 
         for probe_name, endpoint in self._gateway_probes.items():
             probe_func = getattr(self, probe_name)
@@ -480,16 +480,15 @@ class EnvoySMetered(EnvoyS):
 
     def _get_subclass(self):
         """Return the subclass for abnormal gateway installations."""
-        if self._probes_finished:
-            consumption_meter = (
-                self.net_consumption_meter or self.total_consumption_meter
+        consumption_meter = (
+            self.net_consumption_meter or self.total_consumption_meter
+        )
+        if not self.production_meter or not consumption_meter:
+            return EnvoySMeteredCtDisabled(
+                self.production_meter,
+                self.net_consumption_meter,
+                self.total_consumption_meter,
             )
-            if not self.production_meter or not consumption_meter:
-                return EnvoySMeteredCtDisabled(
-                    self.production_meter,
-                    self.net_consumption_meter,
-                    self.total_consumption_meter,
-                )
 
         return None
 

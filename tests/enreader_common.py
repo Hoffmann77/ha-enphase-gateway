@@ -11,7 +11,7 @@ from httpx import Response
 from custom_components.enphase_gateway.enreader import GatewayReader
 
 
-def get_mock_enreader(self, update: bool = True, token: str | None = None):
+async def get_mock_enreader(self, update: bool = True, token: str | None = None):
     """Return a mock gateway reader."""
     enreader = GatewayReader("127.0.0.1")
     await enreader.authenticate("username", "password", token)

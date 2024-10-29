@@ -287,7 +287,7 @@ class EnphaseGateway:
             self.gateway.initial_update_finished = True
 
     def probe(self, _request) -> None:
-        """Probe the gateway."""
+        """Run the gateway probes."""
         data = {}
         for endpoint in self._required_probing_endpoints:
             data[endpoint.path] = endpoint.fetch(_request)

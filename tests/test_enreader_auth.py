@@ -21,7 +21,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize(
-    "version, gateway_class",
+    "version, auth_class",
     [
          ("3.7.0", auth.LegacyAuth),
     ],

@@ -76,8 +76,9 @@ class GatewayFixture:
 
     def mock(self, endpoint: str, behaviour: str = "default"):
         """Mock the endpoint."""
-        request_data = self.meta[endpoint][behaviour]["request"]
-        response_data = self.meta[endpoint][behaviour]["response"]
+        endpoint_data = self.meta["endpoints"][endpoint][behaviour]
+        request_data = endpoint_data["request"]
+        response_data = endpoint_data["response"]
 
         if (text := response_data.get("text")) is None:
             text = self._load_fixture(response_data["text_path"])

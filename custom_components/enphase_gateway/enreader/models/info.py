@@ -32,7 +32,7 @@ class Info:
         if (imeter := xml.findtext("device/imeter")) is not None:
             imeter = bool(imeter)
 
-        if (web_tokens := xml.findtext("device/web-tokens")) is not None:
+        if (web_tokens := xml.findtext("web-tokens")) is not None:
             web_tokens = bool(web_tokens)
 
         return cls(

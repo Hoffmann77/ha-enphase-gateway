@@ -226,12 +226,13 @@ class GatewayReader:
                 "You must authenticate to the gateway before making requests."
             )
 
+        headers = self.auth.headers or {}
         try:
             response = await async_request(
                 "GET",
                 f"{self.auth.protocol}://{self.host}{endpoint}",
                 self._async_client,
-                headers={**DEFAULT_HEADERS, **self.auth.headers},
+                headers={**DEFAULT_HEADERS, **headers},
                 cookies=self.auth.cookies,
                 auth=self.auth.auth,
             )

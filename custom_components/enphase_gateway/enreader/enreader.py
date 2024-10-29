@@ -145,6 +145,14 @@ class GatewayReader:
 
         assert info.serial_number is not None
 
+        _LOGGER.debug(
+            "Authenticating based on info: "
+            + f"part_number: {info.part_number}, "
+            + f"firmware_version: {info.firmware_version}, "
+            + f"imeter: {info.imeter}, "
+            + f"web_tokens: {info.web_tokens}, "
+        )
+
         if info.web_tokens:
             # Firmware using token based authentication
             if token or (username and password):
@@ -186,13 +194,9 @@ class GatewayReader:
         await self._detect_model(info)
 
         _LOGGER.debug(
-            "Authentication complete: "
-            + f"part_number: {self._info.part_number}, "
-            + f"firmware_version: {self._info.firmware_version}, "
-            + f"imeter: {self._info.imeter}, "
-            + f"web_tokens: {self._info.web_tokens}, "
-            + f"Gateway class: {self.gateway.__class__.__name__}, "
+            "Authentication finished: "
             + f"Authentication class: {self.auth.__class__.__name__}, "
+            + f"Gateway class: {self.gateway.__class__.__name__}, "
         )
 
     async def update(self) -> None:

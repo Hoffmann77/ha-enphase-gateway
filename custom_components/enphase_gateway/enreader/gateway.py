@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import functools
 from typing import Callable
 
 import xmltodict
@@ -64,20 +65,27 @@ def gateway_property(
     return decorator if _func is None else decorator(_func)
 
 
-def gateway_probe(_func: Callable | None = None, **kwargs) -> property:
-    """Gateway probe decorator.
+def gateway_probe(
+        _func: Callable | None = None,
+        *,
+        endpoint: str | None = None,
+) -> Callable:
+    """Decorate the function as a gateway probe.
 
-    Register the decorated method and it's required endpoint to
-    BaseGateway._gateway_probes.
+    The decorator injects the following attributes to the function:
+        - `._is_gateway_probe`
+        - `._required_endpoint`
 
-    Return a property of the the decorated method.
+    These attributes can be used to identify a gateway probe
+    and it's required endpoint during object creation.
 
     Parameters
     ----------
     _func : Callable, optional
-        Decorated method. The default is None.
-    **kwargs
-        Optional keyword arguments.
+        Function to decorate. This function is only passed in directly
+        if the decorator is called without arguments.
+    endpoint : str, optional
+        The endpoint required for this probe. The dafault is None.
 
     Returns
     -------
@@ -85,22 +93,30 @@ def gateway_probe(_func: Callable | None = None, **kwargs) -> property:
         Property of the decorated method.
 
     """
-    required_endpoint = kwargs.pop("required_endpoint", None)
-    cache = kwargs.pop("cache", 0)
+    # required_endpoint = kwargs.pop("required_endpoint", None)
+    # cache = kwargs.pop("cache", 0)
 
     def decorator(func):
-        endpoint = None
-        if required_endpoint:
-            endpoint = GatewayEndpoint(required_endpoint, cache)
 
-        func.gateway_probe = endpoint
+        if endpoint:
+            required_endpoint = GatewayEndpoint(endpoint)
+        else:
+            required_endpoint = None
+        #func.gateway_probe = endpoint
+
+        func._is_gateway_probe = True
+        func._required_endpoint = required_endpoint
+
         return func
 
-    return decorator if _func is None else decorator(_func)
+    if _func is None:
+        return decorator
+    else:
+        decorator(_func)
 
 
-class BaseGateway:
-    """Base class representing an (R)Enphase Gateway.
+class EnphaseGateway:
+    """A class to represent an (R)Enphase Gateway.
 
     Provides properties to access data fetched from the required endpoint.
 
@@ -113,10 +129,23 @@ class BaseGateway:
 
     """
 
-    VERBOSE_NAME = "Enphase Gateway"
+    VERBOSE_NAME = "Generic Enphase Gateway"
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs) -> EnphaseGateway:
         """Create a new instance.
+
+        The class uses descriptors and the `gateway_property` decorator
+        to define the data that is available on the (R)Enphase Gateway.
+
+        Descriptors can be used to define easily accessible data.
+        Be aware that descriptors have no access to the instance of the class.
+        The following descriptors are currently available:
+            - RegexDesriptor
+            - JsonDescriptor
+
+        The `gateway_property` decorator works similar to the python
+        `property` decorator but allows additional keyword arguments.
+
 
         Catch methods having the 'gateway_property' attribute and add them
         to the classes '_gateway_properties' attribute.
@@ -124,38 +153,58 @@ class BaseGateway:
 
         """
         instance = super().__new__(cls)
+
         gateway_properties = {}
         gateway_probes = {}
 
         for obj in [instance.__class__] + instance.__class__.mro():
+            #
+            # Iterate over the method resolution order to get
+            # all `gateway_properties` and `gateway_probes`.
+            # This allows us to use inheritance.
+            #
             owner_uid = f"{obj.__name__.lower()}"
             for attr_name, attr_val in obj.__dict__.items():
-                # add gateway properties that have been added to the classes
-                # _gateway_properties dict by descriptors.
+                #
+                # Iterate over all attributes of the objet.
+                #
                 if attr_name == f"{owner_uid}_gateway_properties":
+                    #
+                    # If the object has a `_gateway_properties`
+                    # attribute it's a gateway class.
+                    # The `_gateway_properties` attribute contains
+                    # all the endpoints of the object.
+                    #
                     for key, val in attr_val.items():
+                        #
+                        # Add all gateway properties that have been added
+                        # to the object's `_gateway_properties` dictionary
+                        # to the gateway_properties dictionary.
+                        #
                         gateway_properties.setdefault(key, val)
 
-                # catch flagged methods and add to instance's
-                # _gateway_properties or _gateway_probes.
-                if endpoint := getattr(attr_val, "gateway_probe", None):
+                if getattr(attr_val, "_is_gateway_probe", False):
+                    #
+                    # Add the gateway probes endpoint to the
+                    # gateway_probes dictionary if the attribute
+                    # hat a `gateway_probe` attribute itself.
+                    #
+                    endpoint = getattr(attr_val, "_required_endpoint")
                     gateway_probes.setdefault(attr_name, endpoint)
 
         instance._gateway_properties = gateway_properties
         instance._gateway_probes = gateway_probes
+
         return instance
 
     def __init__(self, gateway_info=None) -> None:
         """Initialize instance of BaseGateway."""
         self.data = {}
-        self.gateway_info = gateway_info
         self.initial_update_finished = False
-        self.resolve = JsonDescriptor.resolve
         self._required_endpoints = None
-        self._probes_finished = False
 
     @property
-    def properties(self):
+    def properties(self) -> list[str]:
         """Return the properties of the gateway."""
         return self._gateway_properties.keys()
 
@@ -169,25 +218,7 @@ class BaseGateway:
         return result
 
     @property
-    def probing_endpoints(self) -> list[GatewayEndpoint]:
-        """Return all endpoints required for probing.
-
-        Returns
-        -------
-        endpoints : list[GatewayEndpoint]
-            List containing all required endpoints.
-
-        """
-        endpoints = EndpointCollection()
-
-        for probe, probe_endpoint in self._gateway_probes.items():
-            if isinstance(probe_endpoint, GatewayEndpoint):
-                endpoints.add(probe_endpoint)
-
-        return endpoints.values
-
-    @property
-    def required_endpoints(self) -> list[GatewayEndpoint]:
+    def _required_endpoints(self) -> list[GatewayEndpoint]:
         """Return all required endpoints for this gateway.
 
         Returns
@@ -197,84 +228,87 @@ class BaseGateway:
 
         """
         if self._required_endpoints is not None:
-            return self._required_endpoints.values
+            return self._required_endpoints
 
-        endpoints = EndpointCollection()
+        endpoints = {}
 
-        _LOGGER.debug(f"Registered properties: {self._gateway_properties}")
-        for prop, prop_endpoint in self._gateway_properties.items():
-            if isinstance(prop_endpoint, GatewayEndpoint):
-
+        for property_name, endpoint in self._gateway_properties.items():
+            if isinstance(endpoint, GatewayEndpoint):
                 if self.initial_update_finished:
-                    # When the value is None or empty list or dict,
-                    # then the endpoint is useless for this token,
-                    # so we do not require it.
-                    if (val := getattr(self, prop)) in (None, [], {}):
-                        _LOGGER.debug(
-                            f"Skip property: {prop} : {prop_endpoint} : {val}"
-                        )
+                    #
+                    # When the gateway property that requires this endpoint
+                    # does not return any valid data after the inital update,
+                    # then the endpoint is useless and we drop the endpoint.
+                    #
+                    value = getattr(self, property_name)
+                    if value in (None, "", [], {}):
                         continue
 
-                endpoints.add(prop_endpoint)
+                if existing := endpoints[endpoint.path]:
+                    # Set the caching interval to the lowest value.
+                    if endpoint.cache_for < existing.cache_for:
+                        existing.cache_for = endpoint.cache_for
+                else:
+                    endpoints[endpoint.path] = endpoint
 
         if self.initial_update_finished:
             # Save list in memory, as we should not evaluate this list again.
             # If the list needs re-evaluation, then reload the plugin.
-            self._required_endpoints = endpoints
+            self._required_endpoints = list(endpoints.values())
 
-        # else:
-        #     for probe, probe_endpoint in self._gateway_probes.items():
-        #         if isinstance(probe_endpoint, GatewayEndpoint):
-        #             endpoints.add(probe_endpoint)
+        return list(endpoints.values())
 
-        return endpoints.values
-
-    def get_subclass(self):
-        """Return the matching subclass."""
-        return None
-
-    def set_endpoint_data(
-            self,
-            endpoint: GatewayEndpoint,
-            response: Response
-    ) -> None:
-        """Store the http Response of a specific endpoint.
-
-        Parameters
-        ----------
-        endpoint : GatewayEndpoint
-            Instance of GatewayEndpoint.
-        response : httpx.Response
-            HTTP response object.
+    @property
+    def _required_probing_endpoints(self) -> list[GatewayEndpoint]:
+        """Return all required probing endpoints for this gateway.
 
         Returns
         -------
-        None.
+        endpoints : list[GatewayEndpoint]
+            List containing all required endpoints.
 
         """
-        if response.status_code >= 400:
-            return
+        endpoints = {}
+        for probe_name, endpoint in self._gateway_probes.items():
+            if isinstance(endpoint, GatewayEndpoint):
+                if endpoint.path not in endpoints:
+                    endpoints[endpoint.path] = endpoint
 
-        content_type = response.headers.get("content-type", "application/json")
-        _LOGGER.debug(
-            f"Setting endpoint data: {endpoint} : {response.content}"
-        )
-        if content_type == "application/json":
-            self.data[endpoint.path] = response.json()
-        elif content_type in ("text/xml", "application/xml"):
-            self.data[endpoint.path] = xmltodict.parse(response.text)
-        elif content_type == "text/html":
-            self.data[endpoint.path] = response.text
-        else:
-            self.data[endpoint.path] = response.text
+        return list(endpoints.values())
 
-    def run_probes(self):
-        """Run all registered probes of the gateway."""
-        _LOGGER.debug(f"Registered probes: {self._gateway_probes.keys()}")
-        for probe in self._gateway_probes.keys():
-            func = getattr(self, probe)
-            func()
-            self._probes_finished = True
+    def update(self, _request) -> None:
+        """Update the gateway's data."""
+        force = True if not self.initial_update_finished else False
+
+        for endpoint in self._required_endpoints:
+            endpoint.update(_request, force=force)
+
+        if not self.gateway.initial_update_finished:
+            self.gateway.initial_update_finished = True
+
+    def probe(self, _request) -> None:
+        """Probe the gateway."""
+        data = {}
+        for endpoint in self._required_probing_endpoints:
+            data[endpoint.path] = endpoint.fetch(_request)
+
+        for probe_name, endpoint in self._gateway_probes.items():
+            probe_func = getattr(self, probe_name)
+            probe_data = data.get(endpoint.path, None)
+
+            probe_func(probe_data)
+
+        self._clean_probes()
+
+        return self._get_subclass()
+
+    def _clean_probes(self):
+        """Clean the data from the probes."""
+        pass
+
+    def _get_subclass(self):
+        """Return the matching subclass."""
+        return None
 
     def __getattribute__(self, name):
         """Return None if gateway does not support this property."""
@@ -312,7 +346,14 @@ class BaseGateway:
         return data
 
 
-class EnvoyLegacy(BaseGateway):
+
+
+
+
+
+
+
+class EnvoyLegacy(EnphaseGateway):
     """Enphase(R) Envoy-R Gateway using FW < R3.9."""
 
     VERBOSE_NAME = "Envoy-R"
@@ -338,7 +379,7 @@ class EnvoyLegacy(BaseGateway):
     )
 
 
-class Envoy(BaseGateway):
+class Envoy(EnphaseGateway):
     """Enphase(R) Envoy-R Gateway using FW >= R3.9."""
 
     VERBOSE_NAME = "Envoy-R"
@@ -437,7 +478,7 @@ class EnvoySMetered(EnvoyS):
         self.net_consumption_meter = None
         self.total_consumption_meter = None
 
-    def get_subclass(self):
+    def _get_subclass(self):
         """Return the subclass for abnormal gateway installations."""
         if self._probes_finished:
             consumption_meter = (
@@ -453,7 +494,7 @@ class EnvoySMetered(EnvoyS):
         return None
 
     @gateway_probe(required_endpoint="ivp/meters")
-    def ivp_meters_probe(self):
+    def ivp_meters_probe(self, data):
         """Probe the meter configuration."""
         base_expr = "$[?(@.state=='enabled' & @.measurementType=='{}')].eid"
         self.production_meter = JsonDescriptor.resolve(

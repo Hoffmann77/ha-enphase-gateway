@@ -276,7 +276,7 @@ class EnphaseGateway:
 
         return list(endpoints.values())
 
-    def update(self, _request) -> None:
+    async def update(self, _request) -> None:
         """Update the gateway's data."""
         force = True if not self.initial_update_finished else False
 
@@ -286,7 +286,7 @@ class EnphaseGateway:
         if not self.gateway.initial_update_finished:
             self.gateway.initial_update_finished = True
 
-    def probe(self, _request) -> None:
+    async def probe(self, _request) -> None:
         """Run the gateway probes."""
         data = {}
         for endpoint in self.probing_endpoints:

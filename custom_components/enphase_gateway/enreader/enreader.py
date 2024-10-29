@@ -302,7 +302,7 @@ class GatewayReader:
 
         _LOGGER.debug("Running gateway probes...")
 
-        subclass = self.gateway.probe(self.request)
+        subclass = await self.gateway.probe(self.request)
         if subclass:
             self.gateway = subclass
 

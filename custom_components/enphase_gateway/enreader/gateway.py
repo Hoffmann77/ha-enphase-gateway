@@ -218,7 +218,7 @@ class EnphaseGateway:
         return result
 
     @property
-    def _required_endpoints(self) -> list[GatewayEndpoint]:
+    def required_endpoints(self) -> list[GatewayEndpoint]:
         """Return all required endpoints for this gateway.
 
         Returns
@@ -259,7 +259,7 @@ class EnphaseGateway:
         return list(endpoints.values())
 
     @property
-    def _required_probing_endpoints(self) -> list[GatewayEndpoint]:
+    def probing_endpoints(self) -> list[GatewayEndpoint]:
         """Return all required probing endpoints for this gateway.
 
         Returns
@@ -280,7 +280,7 @@ class EnphaseGateway:
         """Update the gateway's data."""
         force = True if not self.initial_update_finished else False
 
-        for endpoint in self._required_endpoints:
+        for endpoint in self.required_endpoints:
             endpoint.update(_request, force=force)
 
         if not self.gateway.initial_update_finished:
@@ -289,7 +289,7 @@ class EnphaseGateway:
     def probe(self, _request) -> None:
         """Run the gateway probes."""
         data = {}
-        for endpoint in self._required_probing_endpoints:
+        for endpoint in self.probing_endpoints:
             data[endpoint.path] = endpoint.fetch(_request)
 
         for probe_name, endpoint in self._gateway_probes.items():

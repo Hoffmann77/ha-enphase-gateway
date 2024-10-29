@@ -454,7 +454,7 @@ class EnvoyS(Envoy):
 
 
 class EnvoySMetered(EnvoyS):
-    """Enphase(R) Envoy Model S Metered Gateway.
+    """Enphase(R) Envoy-S Metered Gateway.
 
     This is the default gateway for metered Envoy-s gateways.
     It provides probes to detect abnormal configurations.

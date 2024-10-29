@@ -2,6 +2,9 @@
 custom_components/enphase_gateway/test.py
 custom_components/enphase_gateway/gateway_reader/test.py
 
+# Ignore docs for now
+docs/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

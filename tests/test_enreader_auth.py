@@ -11,12 +11,22 @@ import pytest
 import respx
 from httpx import Response
 
-from custom_components.enphase_gateway.enreader import auth, GatewayReader
-from custom_components.enphase_gateway.enreader import gateway
+from custom_components.enphase_gateway.enreader import GatewayReader
+from custom_components.enphase_gateway.enreader.auth import (
+    LegacyAuth,
+    EnphaseTokenAuth
+)
+from custom_components.enphase_gateway.enreader.gateway import (
+    EnvoyLegacy,
+    Envoy,
+    EnvoyS,
+    EnvoySMetered,
+)
 from .enreader_common import (
-    get_mock_enreader,
+    # get_mock_enreader,
     GatewayFixture,
 )
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -24,8 +34,10 @@ LOGGER = logging.getLogger(__name__)
 @pytest.mark.parametrize(
     "version, auth_class, gateway_class",
     [
-         ("3.7.0", auth.LegacyAuth, gateway.EnvoyLegacy),
-         ("3.9.36", auth.LegacyAuth, gateway.Envoy),
+         ("3.7.0", LegacyAuth, EnvoyLegacy),
+         ("3.9.36", LegacyAuth, Envoy),
+         ("7.6.175_standard", EnphaseTokenAuth, EnvoyS),
+         ("7.6.175_metered", EnphaseTokenAuth, EnvoySMetered),
     ],
 )
 @pytest.mark.asyncio
@@ -33,7 +45,7 @@ LOGGER = logging.getLogger(__name__)
 async def test_auth(version: str, auth_class, gateway_class) -> None:
     """Test the authentication process."""
     fixture = GatewayFixture(version)
-    fixture.mock_auth_endpoints()
+    fixture.mock_auth_endpoints(enlighten=True)
 
     enreader = GatewayReader("127.0.0.1")
 

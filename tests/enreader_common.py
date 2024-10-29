@@ -50,6 +50,7 @@ class GatewayFixture:
         """Set up the response mocks the for the authentication endpoints."""
         # TODO: mock probing endpoints
         self.mock("/info")
+        self.mock("/ivp/meters")
 
         if mock_enlighten:
             respx.post(

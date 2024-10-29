@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import logging
-import functools
+# import functools
 from typing import Callable
 
-import xmltodict
-from httpx import Response
+# import xmltodict
+# from httpx import Response
 
 from .const import AVAILABLE_PROPERTIES
-from .endpoint import GatewayEndpoint, EndpointCollection
+from .endpoint import GatewayEndpoint
 from .descriptors import (
     PropertyDescriptor,
     # ResponseDescriptor,

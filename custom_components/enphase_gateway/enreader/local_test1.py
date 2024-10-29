@@ -16,25 +16,14 @@ from lxml import etree
 #from descriptors import ResponseDescriptor, JsonDescriptor, RegexDescriptor, PropertyDescriptor
 
 
-find = "test_string"
-
-new = "<replaced>"
-
-
-text = "fsiadfhsadiofhsadklfsjfltkjvkvjlkjfajjrerajeftest_stringfaskfjsdfksad"
-
-start = time.perf_counter()
-
-
-for i in range(1000):
-    if find in text:
-        text.replace(find, new)
-
-print("time:", time.perf_counter() - start)
 
 
 
+def test():
+    y = False
+    return 5 if y else 7
 
+print(test())
 
 
 

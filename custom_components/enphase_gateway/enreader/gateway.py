@@ -30,7 +30,9 @@ _LOGGER = logging.getLogger(__name__)
 
 def gateway_property(
         _func: Callable | None = None,
-        **kwargs: dict,
+        *,
+        endpoint: str | None = None,
+        cache_for: int = 0,
 ) -> PropertyDescriptor:
     """Decorate the given method as gateway property.
 
@@ -51,18 +53,21 @@ def gateway_property(
         Property descriptor calling the method on attribute access.
 
     """
-    required_endpoint = kwargs.pop("required_endpoint", None)
-    cache = kwargs.pop("cache", 0)
+    # required_endpoint = kwargs.pop("required_endpoint", None)
+    # cache = kwargs.pop("cache", 0)
 
     def decorator(func):
         return PropertyDescriptor(
             fget=func,
             doc=None,
-            required_endpoint=required_endpoint,
-            cache=cache,
+            required_endpoint=endpoint,
+            cache=cache_for,
         )
 
-    return decorator if _func is None else decorator(_func)
+    if _func is None:
+        return decorator
+    else:
+        return decorator(_func)
 
 
 def gateway_probe(
@@ -112,7 +117,7 @@ def gateway_probe(
     if _func is None:
         return decorator
     else:
-        decorator(_func)
+        return decorator(_func)
 
 
 class EnphaseGateway:
@@ -396,7 +401,7 @@ class Envoy(EnphaseGateway):
         "wattHoursLifetime", "/api/v1/production"
     )
 
-    @gateway_property(required_endpoint="/api/v1/production/inverters")
+    @gateway_property(endpoint="/api/v1/production/inverters")
     def inverters(self):
         """Single inverter production data."""
         inverters = self.data.get("/api/v1/production/inverters")
@@ -413,7 +418,7 @@ class EnvoyS(Envoy):
 
     ensemble_secctrl = JsonDescriptor("", "/ivp/ensemble/secctrl")
 
-    @gateway_property(required_endpoint="/ivp/ensemble/inventory")
+    @gateway_property(endpoint="/ivp/ensemble/inventory")
     def ensemble_inventory(self) -> EnsembleInventory | None:
         """Ensemble Encharge storages."""
         result = JsonDescriptor.resolve(
@@ -428,7 +433,7 @@ class EnvoyS(Envoy):
 
         return None
 
-    @gateway_property(required_endpoint="/ivp/ensemble/power")
+    @gateway_property(endpoint="/ivp/ensemble/power")
     def ensemble_power(self) -> EnsemblePowerDevices | None:
         """Ensemble power data."""
         result = JsonDescriptor.resolve(
@@ -439,7 +444,7 @@ class EnvoyS(Envoy):
 
         return None
 
-    @gateway_property(required_endpoint="/production.json")
+    @gateway_property(endpoint="/production.json")
     def ac_battery(self) -> ACBatteryStorage | None:
         """Return AC battery storage data."""
         # AC-Battery is installed when the 'percentFull' key exists.
@@ -510,7 +515,7 @@ class EnvoySMetered(EnvoyS):
         )
         _LOGGER.debug("Probe: 'ivp_meters_probe' finished")
 
-    @gateway_property(required_endpoint="/ivp/meters/readings")
+    @gateway_property(endpoint="/ivp/meters/readings")
     def grid_power(self):
         """Return grid power."""
         if eid := self.net_consumption_meter:
@@ -521,7 +526,7 @@ class EnvoySMetered(EnvoyS):
 
         return None
 
-    @gateway_property(required_endpoint="/ivp/meters/readings")
+    @gateway_property(endpoint="/ivp/meters/readings")
     def grid_import(self):
         """Return grid import."""
         if eid := self.net_consumption_meter:
@@ -534,7 +539,7 @@ class EnvoySMetered(EnvoyS):
 
         return None
 
-    @gateway_property(required_endpoint="/ivp/meters/readings")
+    @gateway_property(endpoint="/ivp/meters/readings")
     def lifetime_grid_net_import(self):
         """Return lifetime grid import."""
         if eid := self.net_consumption_meter:
@@ -545,7 +550,7 @@ class EnvoySMetered(EnvoyS):
 
         return None
 
-    @gateway_property(required_endpoint="/ivp/meters/readings")
+    @gateway_property(endpoint="/ivp/meters/readings")
     def grid_export(self):
         """Return grid export."""
         if eid := self.net_consumption_meter:
@@ -558,7 +563,7 @@ class EnvoySMetered(EnvoyS):
 
         return None
 
-    @gateway_property(required_endpoint="/ivp/meters/readings")
+    @gateway_property(endpoint="/ivp/meters/readings")
     def lifetime_grid_net_export(self):
         """Return lifetime grid export."""
         if eid := self.net_consumption_meter:
@@ -569,7 +574,7 @@ class EnvoySMetered(EnvoyS):
 
         return None
 
-    @gateway_property(required_endpoint="/ivp/meters/readings")
+    @gateway_property(endpoint="/ivp/meters/readings")
     def production(self):
         """Return the measured active power."""
         return JsonDescriptor.resolve(
@@ -577,7 +582,7 @@ class EnvoySMetered(EnvoyS):
             self.data.get("/ivp/meters/readings", {})
         )
 
-    @gateway_property(required_endpoint="/production.json", cache=0)
+    @gateway_property(endpoint="/production.json", cache_for=0)
     def daily_production(self):
         """Return the daily energy production."""
         return JsonDescriptor.resolve(
@@ -585,7 +590,7 @@ class EnvoySMetered(EnvoyS):
             self.data.get("/production.json", {})
         )
 
-    @gateway_property(required_endpoint="/production.json", cache=0)
+    @gateway_property(endpoint="/production.json", cache_for=0)
     def seven_days_production(self):
         """Return the daily energy production."""
         # HINT: Currently disabled due to inaccurate values.
@@ -595,7 +600,7 @@ class EnvoySMetered(EnvoyS):
             self.data.get("/production.json", {}),
         )
 
-    @gateway_property(required_endpoint="/ivp/meters/readings")
+    @gateway_property(endpoint="/ivp/meters/readings")
     def lifetime_production(self):
         """Return the lifetime energy production."""
         return JsonDescriptor.resolve(
@@ -603,7 +608,7 @@ class EnvoySMetered(EnvoyS):
             self.data.get("/ivp/meters/readings", {})
         )
 
-    @gateway_property(required_endpoint="/ivp/meters/readings")
+    @gateway_property(endpoint="/ivp/meters/readings")
     def consumption(self):
         """Return the measured active power."""
         if eid := self.net_consumption_meter:
@@ -622,7 +627,7 @@ class EnvoySMetered(EnvoyS):
 
         return None
 
-    @gateway_property(required_endpoint="/production.json", cache=0)
+    @gateway_property(endpoint="/production.json", cache_for=0)
     def daily_consumption(self):
         """Return the daily energy production."""
         return JsonDescriptor.resolve(
@@ -630,7 +635,7 @@ class EnvoySMetered(EnvoyS):
             self.data.get("/production.json", {})
         )
 
-    @gateway_property(required_endpoint="/production.json", cache=0)
+    @gateway_property(endpoint="/production.json", cache_for=0)
     def seven_days_consumption(self):
         """Return the daily energy production."""
         # HINT: Currently disabled due to inaccurate values.
@@ -640,7 +645,7 @@ class EnvoySMetered(EnvoyS):
             self.data.get("/production.json", {}),
         )
 
-    @gateway_property(required_endpoint="/ivp/meters/readings")
+    @gateway_property(endpoint="/ivp/meters/readings")
     def lifetime_consumption(self):
         """Return the lifetime energy production."""
         if eid := self.net_consumption_meter:
@@ -713,7 +718,7 @@ class EnvoySMeteredCtDisabled(EnvoyS):
         self.total_consumption_meter = total_consumption_meter
         self.prod_type = "eim" if production_meter else "inverters"
 
-    @gateway_property(required_endpoint="/production.json")
+    @gateway_property(endpoint="/production.json")
     def production(self):
         """Energy production."""
         return JsonDescriptor.resolve(
@@ -721,7 +726,7 @@ class EnvoySMeteredCtDisabled(EnvoyS):
             self.data.get("/production.json", {})
         )
 
-    @gateway_property(required_endpoint="/production.json")
+    @gateway_property(endpoint="/production.json")
     def daily_production(self):
         """Todays energy production."""
         return JsonDescriptor.resolve(
@@ -730,7 +735,7 @@ class EnvoySMeteredCtDisabled(EnvoyS):
         )
 
     # HINT: Currently disabled due to inaccurate values.
-    @gateway_property(required_endpoint="/production.json")
+    @gateway_property(endpoint="/production.json")
     def seven_days_production(self):
         """Last seven days energy production."""
         return None
@@ -739,7 +744,7 @@ class EnvoySMeteredCtDisabled(EnvoyS):
             self.data.get("/production.json", {})
         )
 
-    @gateway_property(required_endpoint="/production.json")
+    @gateway_property(endpoint="/production.json")
     def lifetime_production(self):
         """Lifetime energy production."""
         return JsonDescriptor.resolve(

@@ -295,13 +295,11 @@ class GatewayReader:
             f"Detected meta model: {self.gateway.__class__.__name__}, "
             + "updating data for the gateway probes..."
         )
-        self.update_endpoints(
-            self.gateway.probing_endpoints, force_update=True
-        )
 
         _LOGGER.debug("Running gateway probes...")
-        self.gateway.run_probes()
-        if subclass := self.gateway.get_subclass():
+
+        subclass = self.gateway.probe()
+        if subclass:
             self.gateway = subclass
 
         _LOGGER.debug(f"Gateway model: {self.gateway.__class__.__name__}")

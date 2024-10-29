@@ -88,7 +88,7 @@ class GatewayFixture:
         respx.request(method, endpoint).mock(
             return_value=Response(
                 response_data["status_code"],
-                headers=response_data["headers"],
+                headers=response_data.get("headers"),
                 text=text,
             )
         )

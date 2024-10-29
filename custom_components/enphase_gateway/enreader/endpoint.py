@@ -1,11 +1,78 @@
 """Enphase gateway endpoint module."""
 
 import time
+import json
 
 from collections import UserDict
 
 
 class GatewayEndpoint:
+    """Class representing a Gateway endpoint."""
+
+    def __init__(
+            self,
+            path: str,
+            cache_for: int = 0,
+    ) -> None:
+        """Initialize instance.
+
+        Parameters
+        ----------
+        endpoint_path : str
+            Relative path of the endpoint.
+        cache : int, optional
+            Number of seconds the endpoint is cached for. The default is 0.
+        fetch : bool, optional
+            Fetch the endpoint if `True`. The default is True.
+
+        """
+        self.path = path
+        self.data = None
+        self.cache_for = cache_for
+        self._timestamp = 0
+
+    def __repr__(self) -> str:
+        """Return a printable representation."""
+        return self.path
+
+    @property
+    def cache_expired(self) -> bool:
+        """Return if the cache is expired."""
+        if (self._timestamp + self._cache_for) <= time.time():
+            return True
+
+        return False
+
+    async def update(self, request, force: bool = False) -> None:
+        """Fetch new data from the endpoint."""
+        if not self.cache_expired and not force:
+            return
+
+        self.data = await self.fetch(request)
+        self._timestamp = time.time()
+
+    async def fetch(self, request):
+        """Fetch the endpoint and return the decoded data."""
+        response = await request(self.path)
+
+        return self._decode_response(response)
+
+    def _decode_response(self, response):
+        """Decode the response content."""
+        content_type = response.headers.get("content-type", "application/json")
+
+        if content_type == "application/json":
+            return json.loads(response.content)
+        elif content_type in ("text/xml", "application/xml"):
+            return response.content
+        else:
+            response.text
+
+
+
+
+
+class GatewayEndpointBackup:
     """Class representing a Gateway endpoint."""
 
     def __init__(
@@ -72,29 +139,4 @@ class GatewayEndpoint:
         self._last_fetch = timestamp
 
 
-class EndpointCollection:
-    """Custom dict for GatewayEndpoints."""
 
-    def __init__(self) -> None:
-        """Initialize instance."""
-        self._endpoints = {}
-
-    @property
-    def values(self) -> list[str]:
-        """Return the endpoints."""
-        return self._endpoints.values()
-
-    def add(self, new_endpoint: GatewayEndpoint) -> None:
-        """Add an endpoint.
-
-        Duplicated endpoints are ignored. Updates the caching interval
-        if the new one shorter than the existing one.
-
-        """
-        _endpoint = self._endpoints.get(new_endpoint.path)
-
-        if _endpoint is None:
-            self._endpoints[new_endpoint.path] = new_endpoint
-
-        elif new_endpoint.cache < _endpoint.cache:
-            _endpoint.cache = new_endpoint.cache

@@ -7,7 +7,7 @@ import httpx
 from awesomeversion import AwesomeVersion
 from envoy_utils.envoy_utils import EnvoyUtils
 
-from .http import async_get
+from .http import async_get, async_request
 from .endpoint import GatewayEndpoint
 from .utils import is_ipv6_address
 from .gateway import EnvoyLegacy, Envoy, EnvoyS, EnvoySMetered
@@ -19,6 +19,11 @@ from .models import Info
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+DEFAULT_HEADERS = {
+    "Accept": "application/json",
+}
 
 
 class GatewayReader:
@@ -196,47 +201,65 @@ class GatewayReader:
         Fetch new data from all required endpoints and update the gateway.
 
         """
-        required_endpoints = self.gateway.required_endpoints
+        await self.gateway.update(self.request)
 
-        if self.gateway.initial_update_finished is False:
-            _LOGGER.debug("Updating reader, initial_update_finished=False")
-            await self.update_endpoints(required_endpoints, force_update=True)
-            self.gateway.initial_update_finished = True
 
-        else:
-            _LOGGER.debug("Updating reader, initial_update_finished=True")
-            await self.update_endpoints(required_endpoints)
 
-    async def update_endpoints(
-        self,
-        endpoints: [GatewayEndpoint],
-        force_update: bool = False,
-    ) -> None:
-        """Update the given endpoints.
 
-        Parameters
-        ----------
-        endpoints : [GatewayEndpoint]
-            List of GatewayEndpoints.
-        force_update : bool, optional
-            Force an update. The default is False.
 
+
+    async def request(self, endpoint: str) -> httpx.Response:
+        """Make a request to the Envoy.
+
+        Request retries on bad JSON responses which the Envoy sometimes returns.
         """
-        _LOGGER.debug(f"Updating endpoints: {endpoints}")
+        return await self._request(endpoint)
 
-        for endpoint in endpoints:
-            if not endpoint.update_required and not force_update:
-                _LOGGER.debug(f"Skipping endpoint: {endpoint}")
-                continue
-
-            url = endpoint.get_url(self.auth.protocol, self.host)
-            response = await self._async_get(
-                url, handle_401=True, follow_redirects=False
+    async def _request(self, endpoint: str, handle_401: bool = True):
+        """Send a HTTP request."""
+        if self.auth is None:
+            raise GatewayAuthenticationRequired(
+                "You must authenticate to the gateway before making requests."
             )
 
-            endpoint.success()
+        try:
+            response = await async_request(
+                "GET",
+                f"{self.auth.protocol}://{self.host}{endpoint}",
+                self._async_client,
+                headers={**DEFAULT_HEADERS, **self.auth.headers},
+                cookies=self.auth.cookies,
+                auth=self.auth.auth,
+            )
+        except httpx.HTTPStatusError as err:
+            if response.status_code == 401 and handle_401:
+                self.auth.resolve_401(self._async_client)
+                return await self._request(endpoint, handle_401=False)
+            else:
+                raise err
+        else:
+            return response
 
-            self.gateway.set_endpoint_data(endpoint, response)
+    async def _async_get(self, url: str, **kwargs):
+        """Send a simple HTTP get request."""
+
+        return await async_get(url, self._async_client, **kwargs)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     async def _get_info(self) -> Info:
         """Return the Info model."""
@@ -245,7 +268,7 @@ class GatewayReader:
         except (httpx.ConnectError, httpx.TimeoutException):
             # Firmware < 7.0.0 does not support HTTPS so we need to try HTTP.
             # Worse sometimes http will redirect to https://localhost.
-            response = await self._request(f"http://{self.host}/info")
+            response = await self._async_get(f"http://{self.host}/info")
 
         return Info.from_response(response)
 
@@ -284,70 +307,4 @@ class GatewayReader:
         _LOGGER.debug(f"Gateway model: {self.gateway.__class__.__name__}")
 
 
-    # async def _request(
-    #     self,
-    #     url: str,
-    #     handle_401: bool = False,
-    #     **kwargs
-    # ) -> httpx.Response:
-    #     """Send a request to the Enphase gateway."""
 
-
-
-
-    # for attempt in range(1, retries+2):
-    #     _base_msg = f"HTTP GET Attempt #{attempt}: {url}"
-    #     try:
-    #         resp = await async_client.get(url, **kwargs)
-    #         if raise_for_status:
-    #             resp.raise_for_status()
-    #     except httpx.TransportError as err:
-    #         if attempt >= retries+1:
-    #             _LOGGER.debug(f"{_base_msg}: Transport Error: {err}")
-    #             raise err
-    #         else:
-    #             await asyncio.sleep(attempt * 0.10)
-    #             continue
-    #     else:
-    #         _LOGGER.debug(
-    #             f"{_base_msg}: Response: {resp}: length: {len(resp.text)}"
-    #         )
-    #         return resp
-
-
-    async def _async_get(self, url: str, handle_401: bool = False, **kwargs):
-        """Make a HTTP GET request to the gateway."""
-        # TODO: How to handle async get if self.auth is None.
-        # This is the case when getting the /info endpoint.
-        if self.auth:
-            headers, cookies = self.auth.headers, self.auth.cookies
-            auth = self.auth.auth
-        else:
-            headers = cookies = auth = None
-
-        try:
-            resp = await async_get(
-                self._async_client,
-                url,
-                headers=headers,
-                cookies=cookies,
-                auth=auth,
-                **kwargs
-            )
-        except httpx.HTTPStatusError as err:
-            _LOGGER.debug(
-                f"Gateway returned status code: {err.response.status_code}"
-            )
-            if err.response.status_code == 401 and handle_401:
-                _LOGGER.debug("Trying to resolve 401 error")
-                self.auth.resolve_401(self._async_client)
-                return await self._async_get(
-                    url,
-                    handle_401=False,
-                    **kwargs
-                )
-            else:
-                raise err
-
-        else:
-            return resp

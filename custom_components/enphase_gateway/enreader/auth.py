@@ -32,7 +32,6 @@ class GatewayAuth(ABC):
 
     def __init__(self) -> None:
         """Initialize GatewayAuth."""
-        pass
 
     @abstractproperty
     def protocol(self) -> str:
@@ -53,6 +52,10 @@ class GatewayAuth(ABC):
     @abstractproperty
     def is_stale(self) -> bool:
         """Return if a refresh of authentication medthod is necessary."""
+
+    @abstractproperty
+    def to_redact(self) -> list[tuple[str, str]]:
+        """Return a list of tuples containing strings to redact."""
 
     @abstractmethod
     async def setup(self, client: httpx.AsyncClient) -> None:
@@ -83,7 +86,7 @@ class LegacyAuth(GatewayAuth):
     @property
     def auth(self) -> httpx.DigestAuth:
         """Return httpx authentication."""
-        if not self._username or not self._password:
+        if not (self._username and self._password):
             return None
 
         return httpx.DigestAuth(self._username, self._password)
@@ -103,6 +106,15 @@ class LegacyAuth(GatewayAuth):
         """Return if a refresh of the authentication medthod is necessary."""
         return False
 
+    @property
+    def to_redact(self) -> list[tuple[str, str]]:
+        """Return a list of tuples containing strings to redact."""
+        return [
+            (self._host, "<<host>>"),
+            (self._username, "<<username>>"),
+            (self._password, "<<password>>"),
+        ]
+
     async def setup(self, client: httpx.AsyncClient) -> None:
         """Set up the authentication method."""
         _LOGGER.debug("Setting up `LegacyAuth` instance.")
@@ -110,11 +122,9 @@ class LegacyAuth(GatewayAuth):
 
     async def refresh(self, client: httpx.AsyncClient) -> None:
         """Refresh the authentication method."""
-        pass
 
     async def resolve_401(self, async_client):
         """Resolve a 401 Unauthorized response."""
-        pass
 
 
 class EnphaseTokenAuth(GatewayAuth):
@@ -237,6 +247,23 @@ class EnphaseTokenAuth(GatewayAuth):
             return True
 
         return False
+
+    @property
+    def to_redact(self) -> list[tuple[str, str]]:
+        """Return a list of tuples containing strings to redact."""
+        to_redact = [
+            (self._host, "<<host>>"),
+            (self._enlighten_username, "<<enlighten_username>>"),
+            (self._enlighten_password, "<<enlighten_password>>"),
+            (self._token, "<<enphase_token>>"),
+        ]
+
+        return to_redact
+
+        # TODO: check if self._cookies is dict or str
+        # if self._cookies is not None:
+        #     for cookie
+        #     to_redact.append()
 
     async def setup(self, async_client: httpx.AsyncClient) -> None:
         """Set up the token based authentication.

@@ -9,39 +9,74 @@ import logging
 import httpx
 from lxml import etree
 
-from awesomeversion import AwesomeVersion
+#from awesomeversion import AwesomeVersion
 
 #from const import AVAILABLE_PROPERTIES
 #from endpoint import GatewayEndpoint
 #from descriptors import ResponseDescriptor, JsonDescriptor, RegexDescriptor, PropertyDescriptor
 
 
-def test():
-    
-    x = {}
-    v = x.values()
-    print(type(v))
-    return
-    
-    
-    response = httpx.get("http://envoy.local/info.xml")
-    
-    xml = etree.fromstring(response.content)
+find = "test_string"
 
-    
-    find = xml.findtext("web-tokens1")
-    
-    if fw := xml.find("device/software"):
-        firmware = AwesomeVersion(fw.text[1:])
-        print(firmware)
-    
-    print(bool(find))
+new = "<replaced>"
 
-    #if (device_tag := xml.find("device")) is not None:
+
+text = "fsiadfhsadiofhsadklfsjfltkjvkvjlkjfajjrerajeftest_stringfaskfjsdfksad"
+
+start = time.perf_counter()
+
+
+for i in range(1000):
+    if find in text:
+        text.replace(find, new)
+
+print("time:", time.perf_counter() - start)
 
 
 
 
-test()
+
+
+
+class Reader:
+
+    def __init__(self, host, gateway):
+        self.host = host
+        self.gateway = gateway
+
+    def update(self):
+        self.gateway.update(self.request)
+
+    def request(self, url):
+        v = f"{self.host}/{url}"
+        print(v)
+        #self.test_2.test(self.)
+
+
+
+class Gateway:
+
+    def __init__(self, url):
+        self.url = url
+
+    def update(self, request):
+        print(request.__self__)
+
+        request(self.url)
+
+
+
+
+
+#gateway = Gateway("envoy.local")
+
+#reader = Reader("host", gateway)
+
+
+#reader.update()
+
+
+
+
 
 

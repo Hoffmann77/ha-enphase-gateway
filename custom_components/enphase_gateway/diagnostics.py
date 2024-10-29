@@ -28,7 +28,7 @@ from .coordinator import EnphaseConfigEntry
 from .enreader import GatewayReader
 
 CONF_TITLE = "title"
-CLEAN_SERIAL = "<<envoyserial>>"
+CLEAN_SERIAL = "<<serial_number>>"
 
 TO_REDACT = {
     CONF_NAME,
@@ -41,36 +41,44 @@ TO_REDACT = {
 }
 
 
-async def _get_fixtures(reader: GatewayReader, serial: str) -> dict[str, Any]:
+async def _get_fixtures(enreader: GatewayReader) -> dict[str, Any]:
     """Collect Envoy endpoints to use for test fixture set."""
+    to_redact = enreader.auth.to_redact
+
     fixtures: dict[str, Any] = {}
     for endpoint in FIXTURE_COLLECTION_ENDPOINTS:
-        response = await reader.request(endpoint)
+        response = await enreader.request(endpoint)
 
-        # Probably not needed.
-        # request_meta: dict[str, Any] = {
-        #     "url": str(response.request.url),
-        #     "method": response.request.method,
-        #     "headers": dict(response.headers.items()),
-        #     # "cookies": dict(response.cookies.items()),
-        # }
+        request_data = {
+            "url": str(response.request.url),
+            "method": response.request.method,
+            "headers": dict(response.request.headers.items()),
+        }
 
-        response_meta: dict[str, Any] = {
+        response_data = {
             "url": str(response.url),
             "status_code": response.status_code,
             "reason_phrase": response.reason_phrase,
+            "is_redirect": response.is_redirect,
             "encoding": response.encoding,
             "headers": dict(response.headers.items()),
-            # "cookies": dict(response.cookies.items()),
+            "cookies": dict(response.cookies.items()),
         }
 
-        # Replace the serial number.
-        response_text = response.text.replace(serial, CLEAN_SERIAL)
+        # Clean the meta data
+        _data = {"request": request_data, "response": response_data}
+        _data_str = json_dumps(_data)
+        for to_replace, placeholder in to_redact:
+            _data_str.replace(to_replace, placeholder)
 
-        fixtures[endpoint] = {
-            "response_meta": response_meta,
-            "response_text": response_text,
-        }
+        fixture_data = json_loads(_data_str)
+
+        # Redact the serial number.
+        fixture_data["response"]["text"] = response.text.replace(
+            enreader.serial_number, CLEAN_SERIAL
+        )
+
+        fixtures[endpoint] = {"default": fixture_data}
 
     return fixtures
 
@@ -85,77 +93,70 @@ async def async_get_config_entry_diagnostics(
     if TYPE_CHECKING:
         assert coordinator.gateway.initial_update_finished
 
-    reader = coordinator.gateway_reader
+    # Get the reader instance
+    enreader = coordinator.gateway_reader
 
     device_registry = dr.async_get(hass)
     entity_registry = er.async_get(hass)
 
-    #
     # Collect every entity and information about the entity's state
     # that is associated with the given config entry.
-    #
-    entities = []
-
-    _devices = dr.async_entries_for_config_entry(
-        device_registry, entry.entry_id
-    )
-    for device in _devices:
-        device_entities = []
-        _entities = er.async_entries_for_device(
+    device_entities = []
+    for device in dr.async_entries_for_config_entry(
+            device_registry, entry.entry_id
+    ):
+        entities = []
+        for entity in er.async_entries_for_device(
             entity_registry,
             device_id=device.id,
             include_disabled_entities=True,
-        )
-        for entity in _entities:
+        ):
             state_dict = None
             if state := hass.states.get(entity.entity_id):
                 state_dict = dict(state.as_dict())
                 state_dict.pop("context", None)
             entity_dict = asdict(entity)
             entity_dict.pop("_cache", None)
-            device_entities.append(
+            entities.append(
                 {"entity": entity_dict, "state": state_dict}
             )
 
         device_dict = asdict(device)
         device_dict.pop("_cache", None)
-        entities.append({"device": device_dict, "entities": entities})
+        device_entities.append({"device": device_dict, "entities": entities})
 
     # Clean the data by removing the serial number.
-    serial_num = coordinator.reader.serial_number
-    coordinator_data = copy.deepcopy(coordinator.data)
-    coordinator_data_cleaned = json_dumps(coordinator_data).replace(
-        serial_num, CLEAN_SERIAL
-    )
-    device_entities_cleaned = json_dumps(device_entities).replace(
-        serial_num, CLEAN_SERIAL
+    device_entities = json_dumps(device_entities).replace(
+        enreader.serial_number, CLEAN_SERIAL
     )
 
-    # The data that is available to the gateway for parsing.
-    gateway_data: dict[str, Any] = reader.data
+    # Clean the raw data that has been fetched from the endpoints.
+    gateway_raw_data = copy.deepcopy(enreader.gateway.data)
+    gateway_raw_data = json_dumps(gateway_raw_data).replace(
+        enreader.serial_number, CLEAN_SERIAL
+    )
 
-    debug_info: dict[str, Any] = {
-        "Firmware version": reader._info.firmware_version,
-        "Part number": reader._info.part_number,
-        "imeter": reader._info.imeter,
-        "web_tokens": reader._info.web_tokens,
-        "Detected gateway class": reader.gateway.__class__.__name__,
-        "Authentication class": reader.auth.__class__.__name__,
+    gateway_info: dict[str, Any] = {
+        "Firmware version": enreader._info.firmware_version,
+        "Part number": enreader._info.part_number,
+        "imeter": enreader._info.imeter,
+        "web_tokens": enreader._info.web_tokens,
+        "Detected gateway class": enreader.gateway.__class__.__name__,
+        "Authentication class": enreader.auth.__class__.__name__,
     }
 
     fixtures: dict[str, Any] = {}
     if entry.options.get(OPTION_DIAGNOSTICS_INCLUDE_FIXTURES, False):
         try:
-            fixtures = await _get_fixtures(reader, serial_num)
+            fixtures = await _get_fixtures(enreader)
         except Exception as err:
             fixtures["Error"] = repr(err)
 
     diagnostic_data: dict[str, Any] = {
         "config_entry": async_redact_data(entry.as_dict(), TO_REDACT),
-        "debug_info": debug_info,
-        "raw_data": json_loads(coordinator_data_cleaned),
-        "gateway_data": gateway_data,
-        "entities_by_device": json_loads(device_entities_cleaned),
+        "gateway_info": gateway_info,
+        "gateway_raw_data": json_loads(gateway_raw_data),
+        "entities_by_device": json_loads(device_entities),
         "fixtures": fixtures,
     }
 

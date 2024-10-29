@@ -1,0 +1,73 @@
+{
+    "endpoints": {
+        "/info": {
+            "default": {
+                "request": {},
+                "response": {
+                    status_code: 200,
+                    "text_path": "info"
+                }
+            }
+        },
+        "/production": {
+            "default": {
+                "request": {},
+                "response": {
+                    status_code: 200,
+                    headers: {
+                        "content-type": "application/json"
+                    },
+                    "text_path": "production"
+                }
+            }
+        },
+        "/production.json": {
+            "default": {
+                "request": {},
+                "response": {
+                    status_code: 200,
+                    headers: {
+                        "content-type": "application/json"
+                    },
+                    "text_path": "production.json"
+                }
+            }
+        },
+        "/ivp/ensemble/inventory": {
+            "default": {
+                "request": {},
+                "response": {
+                    status_code: 404,
+                    headers: {
+                        "content-type": "application/json; charset=ISO-8859-4"
+                    },
+                    "text_path": "ivp_ensemble_inventory"
+                }
+            }
+        },
+        "/ivp/ensemble/dry_contacts": {
+            "default": {
+                "request": {},
+                "response": {
+                    status_code: 200,
+                    headers: {
+                        "content-type": "application/json; charset=ISO-8859-4"
+                    },
+                    "text_path": "ivp_ensemble_dry_contacts"
+                }
+            }
+        },
+        "/ivp/ss/dry_contact_settings": {
+            "default": {
+                "request": {},
+                "response": {
+                    status_code: 404,
+                    headers: {
+                        "content-type": "application/json; charset=ISO-8859-4"
+                    },
+                    "text_path": "ivp_ss_dry_contact_settings"
+                }
+            }
+        }
+    }
+}

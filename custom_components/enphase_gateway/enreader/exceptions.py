@@ -7,7 +7,7 @@ class GatewayError(Exception):
     """Base Exception."""
 
 
-# Authentication errors --->
+# Authentication errors --------------------------------------------------->
 
 class AuthenticationError(GatewayError):
     """Base Exception for authentication errors."""
@@ -19,13 +19,14 @@ class AuthenticationError(GatewayError):
 
 
 class EnlightenAuthenticationError(AuthenticationError):
-    """Exception raised when authentation to the Enlighten platform fails."""
+    """Exception raised when unable to authentation to the Enlighten cloud."""
 
 
 class GatewayAuthenticationError(AuthenticationError):
     """Exception raised when unable to authenticate to the Enphase gateway."""
 
 
+# TODO: check if in use
 class GatewayAuthenticationRequired(AuthenticationError):
     """Exception raised when authentication hasn't been setup."""
 

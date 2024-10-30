@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+import jwt
 import orjson
 import respx
 from httpx import Response
@@ -52,6 +53,12 @@ class GatewayFixture:
         self.mock("/info")
         #self.mock("/ivp/meters")
 
+        jwt_token = jwt.encode(
+            payload={"name": "mock_token", "exp": 1707837780},
+            key="secret",
+            algorithm="HS256",
+        )
+
         if mock_enlighten:
             respx.post(
                 "https://enlighten.enphaseenergy.com/login/login.json?"
@@ -69,7 +76,7 @@ class GatewayFixture:
                 )
             )
             respx.post("https://entrez.enphaseenergy.com/tokens").mock(
-                return_value=Response(200, text="token")
+                return_value=Response(200, text=jwt_token)
             )
             respx.get("/auth/check_jwt").mock(
                 return_value=Response(200, json={})

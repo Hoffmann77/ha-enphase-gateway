@@ -84,17 +84,11 @@ class GatewayReader:
         # self._client_no_verify_ssl = client_no_verify_ssl
         self._info = GatewayInfo(self.host, self._async_client)
 
-    # Required for endpoint tests
-    def _get_async_client(self) -> httpx.AsyncClient:
-        """Return default httpx client."""
-        return httpx.AsyncClient(
-            verify=False,
-            timeout=10
-        )
+    
 
     @property
     def name(self) -> str | None:
-        """Return the verbose name."""
+        """Return the verbose name of the gateway."""
         if self.gateway:
             return self.gateway.VERBOSE_NAME
 
@@ -170,7 +164,7 @@ class GatewayReader:
         assert info.serial_number is not None
 
         _LOGGER.debug(
-            "Detecting authenticating method based on info: "
+            "Gateway info for : "
             + f"part_number: {info.part_number}, "
             + f"firmware_version: {info.firmware_version}, "
             + f"imeter: {info.imeter}, "
@@ -184,7 +178,7 @@ class GatewayReader:
                     self.host,
                     enlighten_username=username,
                     enlighten_password=password,
-                    serial_number=self.serial_number,
+                    serial_number=info.serial_number,
                     token_raw=token,
                 )
         else:
@@ -340,3 +334,6 @@ class GatewayReader:
 
         return gateway
 
+    def _get_async_client(self) -> httpx.AsyncClient:
+        """Return default httpx client."""
+        return httpx.AsyncClient(verify=False, timeout=5)

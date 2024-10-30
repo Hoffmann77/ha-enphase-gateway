@@ -299,6 +299,9 @@ class EnphaseTokenAuth(GatewayAuth):
             Async httpx client.
 
         """
+        if async_client is None:
+            async_client = self._get_client()
+
         self._refresh_token(async_client)
         self._refresh_cookies(async_client)
 
@@ -470,6 +473,9 @@ class EnphaseTokenAuth(GatewayAuth):
                 ) from err
         else:
             return resp
+
+    def _get_client():
+            return https.AsyncClient(verify=True)
 
     async def _check_token(
             self,

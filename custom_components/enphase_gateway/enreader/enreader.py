@@ -10,7 +10,7 @@ from envoy_utils.envoy_utils import EnvoyUtils
 from .http import async_get, async_request
 from .endpoint import GatewayEndpoint
 from .utils import is_ipv6_address
-from .gateway import EnvoyLegacy, Envoy, EnvoyS, EnvoySMetered
+from .gateway import EnphaseGateway, EnvoyLegacy, Envoy, EnvoyS, EnvoySMetered
 from .const import LEGACY_ENVOY_VERSION
 from .gateway_info import GatewayInfo
 from .auth import LegacyAuth, EnphaseTokenAuth
@@ -121,6 +121,30 @@ class GatewayReader:
         password: str | None = None,
         token: str | None = None,
     ) -> None:
+        _LOGGER.debug("Starting authentication process...")
+        info = await self._get_info()
+
+        assert info.serial_number is not None
+
+        self.auth = await self._authenticate(info, username, password, token)
+
+        # Detect the correct gateway class.
+        gateway = await self._detect_gateway(info)
+        self.gateway = await self._probe_gateway(gateway)
+
+        _LOGGER.debug(
+            "Authentication finished: "
+            + f"Authentication class: {self.auth.__class__.__name__}, "
+            + f"Gateway class: {self.gateway.__class__.__name__}, "
+        )
+
+    async def _authenticate(
+        self,
+        info: Info,
+        username: str | None = None,
+        password: str | None = None,
+        token: str | None = None,
+    ) -> None:
         """Authenticate to the Enphase gateway.
 
         Parse the info.xml endpoint to determine the required auth class.
@@ -146,7 +170,7 @@ class GatewayReader:
         assert info.serial_number is not None
 
         _LOGGER.debug(
-            "Authenticating based on info: "
+            "Detecting authenticating method based on info: "
             + f"part_number: {info.part_number}, "
             + f"firmware_version: {info.firmware_version}, "
             + f"imeter: {info.imeter}, "
@@ -156,7 +180,7 @@ class GatewayReader:
         if info.web_tokens:
             # Firmware using token based authentication
             if token or (username and password):
-                self.auth = EnphaseTokenAuth(
+                auth = EnphaseTokenAuth(
                     self.host,
                     enlighten_username=username,
                     enlighten_password=password,
@@ -176,9 +200,9 @@ class GatewayReader:
                 password = info.serial_number[:6]
 
             if username and password:
-                self.auth = LegacyAuth(self.host, username, password)
+                auth = LegacyAuth(self.host, username, password)
 
-        if not self.auth:
+        if not auth:
             _LOGGER.error(
                 "You must provide a valid username/password or token "
                 + "to authenticate to the Enphase gateway."
@@ -188,16 +212,11 @@ class GatewayReader:
             )
 
         # Update the authentication method to check if configured correctly.
-        await self.auth.setup(self._async_client)
+        await auth.setup(self._async_client)
 
-        # Detect the correct gateway class.
-        await self._detect_model(info)
+        return auth
 
-        _LOGGER.debug(
-            "Authentication finished: "
-            + f"Authentication class: {self.auth.__class__.__name__}, "
-            + f"Gateway class: {self.gateway.__class__.__name__}, "
-        )
+
 
     async def update(self) -> None:
         """Update the gateway's data.
@@ -277,7 +296,7 @@ class GatewayReader:
 
         return Info.from_response(response)
 
-    async def _detect_model(self, info: Info) -> None:
+    async def _detect_gateway(self, info: Info) -> EnphaseGateway:
         """Detect the Enphase gateway model.
 
         Detect the gateway model based on info.xml parmeters.
@@ -286,28 +305,38 @@ class GatewayReader:
         _LOGGER.debug("Detecting gateway model...")
 
         if info.firmware_version < LEGACY_ENVOY_VERSION:
-            self.gateway = EnvoyLegacy()
+            gateway = EnvoyLegacy()
         elif info.imeter is not None:
             # info.xml has the `imeter` tag.
             if info.imeter:
-                self.gateway = EnvoySMetered()
+                gateway = EnvoySMetered()
             else:
-                self.gateway = EnvoyS()
+                gateway = EnvoyS()
         else:
-            self.gateway = Envoy()
+            gateway = Envoy()
 
         _LOGGER.debug(
-            f"Detected meta model: {self.gateway.__class__.__name__}, "
-            + "updating data for the gateway probes..."
+            f"Detected base gateway: {gateway.__class__.__name__}"
         )
+
+        return gateway
+
+        # _LOGGER.debug("Running gateway probes...")
+
+        # subclass = await self.gateway.probe(self.request)
+        # if subclass:
+        #     self.gateway = subclass
+
+        # _LOGGER.debug(f"Gateway model: {self.gateway.__class__.__name__}")
+
+    async def _probe_gateway(self, gateway: EnphaseGateway) -> EnphaseGateway:
 
         _LOGGER.debug("Running gateway probes...")
 
-        subclass = await self.gateway.probe(self.request)
+        subclass = await gateway.probe(self.request)
         if subclass:
-            self.gateway = subclass
 
-        _LOGGER.debug(f"Gateway model: {self.gateway.__class__.__name__}")
+            return subclass
 
-
+        return gateway
 

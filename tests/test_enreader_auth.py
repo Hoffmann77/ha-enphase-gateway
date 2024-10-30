@@ -49,6 +49,14 @@ async def test_auth(version: str, auth_class, gateway_class) -> None:
 
     enreader = GatewayReader("127.0.0.1")
 
+    # Get the endpoints required for probing
+    info = await enreader._get_info()
+    gateway = await enreader._detect_base_gateway(info)
+    to_mock = [endpoint.path for endpoint in gateway.probing_endpoints]
+
+    # Mock the endpoints required for probing
+    fixture.mock_probing_endpoints(to_mock)
+
     await enreader.authenticate("username", "password")
 
     assert isinstance(enreader.auth, auth_class)

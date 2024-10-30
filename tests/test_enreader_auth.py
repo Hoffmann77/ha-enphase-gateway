@@ -53,6 +53,8 @@ async def test_auth(version: str, auth_class, gateway_class) -> None:
     info = await enreader._get_info()
     gateway = await enreader._detect_gateway(info)
     to_mock = [endpoint.path for endpoint in gateway.probing_endpoints]
+    print("gateway: ", gateway)
+    print("to_mock: ", to_mock)
 
     # Mock the endpoints required for probing
     fixture.mock_probing_endpoints(to_mock)

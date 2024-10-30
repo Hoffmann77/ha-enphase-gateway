@@ -475,7 +475,7 @@ class EnphaseTokenAuth(GatewayAuth):
             return resp
 
     def _get_client():
-            return https.AsyncClient(verify=True)
+        return https.AsyncClient(verify=True)
 
     async def _check_token(
             self,

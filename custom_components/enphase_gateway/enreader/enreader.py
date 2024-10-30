@@ -286,7 +286,7 @@ class GatewayReader:
 
 
     async def _get_info(self) -> Info:
-        """Return the Info model."""
+        """Fetch the /info endpoint and return the `Info` model."""
         try:
             response = await self._async_get(f"https://{self.host}/info")
         except (httpx.ConnectError, httpx.TimeoutException):

@@ -19,7 +19,7 @@ class AuthenticationError(GatewayError):
 
 
 class EnlightenAuthenticationError(AuthenticationError):
-    """Exception raised for a 401 Unauthorized response from Enlighten."""
+    """Exception raised when authentation to the Enlighten platform fails."""
 
 
 class GatewayAuthenticationError(AuthenticationError):

@@ -30,7 +30,8 @@ class Info:
             firmware_version = None
 
         if (imeter := xml.findtext("device/imeter")) is not None:
-            imeter = bool(imeter)
+            imeter = imeter.lower() == "true"
+            # imeter = bool(imeter)
 
         if (web_tokens := xml.findtext("web-tokens")) is not None:
             web_tokens = bool(web_tokens)

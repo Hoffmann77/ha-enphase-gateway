@@ -407,7 +407,7 @@ class EnphaseTokenAuth(GatewayAuth):
                 async_client,
                 json={
                     "session_id": enlighten_data["session_id"],
-                    "serial_num": self._gateway_serial_num,
+                    "serial_num": self._serial_number,
                     "username": self._enlighten_username
                 }
             )

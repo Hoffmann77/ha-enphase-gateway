@@ -463,7 +463,7 @@ class EnphaseTokenAuth(GatewayAuth):
             return response
 
 
-    async def _check_token(
+    async def _check_jwt(
             self,
             async_client: httpx.AsyncClient,
             token: str,

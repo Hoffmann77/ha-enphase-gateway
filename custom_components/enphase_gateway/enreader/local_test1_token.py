@@ -5,16 +5,6 @@ import httpx
 
 
 
-# test = "Häh"
-
-# print(test.encode("utf-8"))
-
-# v = json.dumps(test.encode("utf-8"))
-
-# print(json.loads(v))
-
-
-
 def _retrieve_token() -> str:
     """Retrieve a new Enphase JWT token from Enlighten.
 
@@ -33,104 +23,85 @@ def _retrieve_token() -> str:
     TOKEN_URL = "https://entrez.enphaseenergy.com/tokens"
 
 
-    client = httpx.Client(verify=True)
-
-    resp = client.get("https://www.bitel.de/fileadmin/content/documents/pk_preislisten/pk-preislisten_05_24_09_23/BITel_Privatkunden_Preisliste_05_2024.pdf")
-
-    # content_text = resp.text
-    content_bytes = resp.content
-    print(len(content_bytes))
-
-    decoded = content_bytes.decode("utf-8", "ignore")
-
-    decoded_encoded = decoded.encode("utf-8")
-
-    print(len(decoded_encoded))
-
-    # print(content)
-
-    #bytes_encoded = content_text.encode("utf-8")
-    #text_decoded = content_bytes.decode("utf-8")
-
-    #with open('test_text_pdf', 'w') as f:
-    #     f.write(content_text)
-
-    #print(len(bytes_encoded))
-    #print(len(text_decoded))
-
-    return
-
-
-    #return
-    # Retrieve the session id from Enlighten.
-    response = client.post(
-        LOGIN_URL,
-        data={
-            'user[email]': "uvn@flap.de",
-            'user[password]': "pw"
-        },
-        #cookies={"test": "test", "new": "new"},
-        headers={"Authorization": f"Bearer token"}
-    )
-
-    request_meta = {
-        "url": str(response.request.url),
-        "method": response.request.method,
-        "headers": dict(response.request.headers.items()),
-    }
-
-    response_meta = {
-        "url": str(response.url),
-        "status_code": response.status_code,
-        "reason_phrase": response.reason_phrase,
-        "encoding": response.encoding,
-        "headers": dict(response.headers.items()),
-        #"content": response.content,
-         "cookies": dict(response.cookies.items()),
-    }
-
-    print(response_meta)
-    return
-
-    with open('response_content', 'wb') as f:
-        f.write(response.content)
-
-    with open('response_json.json', 'w') as f:
-
-        json.dump(response.json(), f)
-
-    with open('response_text.txt', 'w') as f:
-
-        f.write(response.text)
-
-
-    with open('response_meta.json', 'w') as f:
-        json_file = {
-            "request_meta": request_meta,
-            "response_meta": response_meta,
+    
+    with httpx.Client(verify=True) as client:
+        # Login to Enlighten to obtain a session ID.
+        response = client.post(
+            LOGIN_URL,
+            data={
+                "user[email]": "uv-hoffmann@arcor.de",
+                "user[password]": "Dublin08",
+            }
+        )
+        
+        meta = {
+            "request": {
+                "url": str(response.request.url),
+                "method": response.request.method,
+                "headers": dict(response.request.headers.items()),
+            },
+            "response": {
+                "url": str(response.url),
+                "status_code": response.status_code,
+                "reason_phrase": response.reason_phrase,
+                "encoding": response.encoding,
+                "headers": dict(response.headers.items()),
+                "cookies": dict(response.cookies.items()),
+            },
         }
-        json.dump(json_file, f)
 
-    print(response.text)
+        with open("login_meta_wrong_pw.json", 'w') as f:
+            json.dump(meta, f)
+
+        with open("login_response_wrong_pw", 'w') as f:
+            f.write(response.text)
+
+        
+
+        enlighten_data = json.loads(response.text)
+        
+        # enlighten_data = {}
+        # enlighten_data["session_id"] = ""
+        
+        # Use the session ID to retrieve a new token.
+        response = client.post(
+            TOKEN_URL,
+            json={
+                #"session_id": enlighten_data["session_id"],
+                "serial_num": "",
+                "username": ""
+            }
+        )
+        
+        meta = {
+            "request": {
+                "url": str(response.request.url),
+                "method": response.request.method,
+                "headers": dict(response.request.headers.items()),
+            },
+            "response": {
+                "url": str(response.url),
+                "status_code": response.status_code,
+                "reason_phrase": response.reason_phrase,
+                "encoding": response.encoding,
+                "headers": dict(response.headers.items()),
+                "cookies": dict(response.cookies.items()),
+            },
+        }
+        
+        abnormal = "missing_session_id"
+        
+        with open(f"token_meta_{abnormal}.json", 'w') as f:
+            json.dump(meta, f)
+
+        with open(f"token_response_{abnormal}", 'w') as f:
+            f.write(response.text)
+        
 
 
 
-    #response_data = json.loads(response.text)
-    #_is_consumer = response_data["is_consumer"]
-    #_manager_token = response_data["manager_token"]
 
-    # # Retrieve the actual token from Enlighten using the session id.
-    # resp = await self._async_post_enlighten(
-    #     async_client,
-    #     self.TOKEN_URL,
-    #     json={
-    #         'session_id': response_data['session_id'],
-    #         'serial_num': self._gateway_serial_num,
-    #         'username': self._enlighten_username
-    #     }
-    # )
 
-    # return resp.text
 
 
 _retrieve_token()

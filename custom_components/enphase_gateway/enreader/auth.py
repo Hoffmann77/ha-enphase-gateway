@@ -281,14 +281,14 @@ class EnphaseTokenAuth(GatewayAuth):
         """
         _LOGGER.debug("Setting up `EnphaseTokenAuth` instance.")
         if not self._token:
-            self._refresh_token()
+            await self._refresh_token()
 
         if not self._token:
             raise GatewayAuthenticationError(
                 "Could not obtain a token for token authentication"
             )
 
-        self._refresh_cookies(async_client)
+        await self._refresh_cookies(async_client)
 
     async def refresh(self, async_client: httpx.AsyncClient) -> None:
         """Refresh the token based authentication.
@@ -299,11 +299,8 @@ class EnphaseTokenAuth(GatewayAuth):
             Async httpx client.
 
         """
-        if async_client is None:
-            async_client = self._get_client()
-
-        self._refresh_token()
-        self._refresh_cookies(async_client)
+        await self._refresh_token()
+        await self._refresh_cookies(async_client)
 
     async def resolve_401(self, async_client: httpx.AsyncClient) -> bool:
         """Resolve 401 Unauthorized response.

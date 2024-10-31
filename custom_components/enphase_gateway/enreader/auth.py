@@ -216,8 +216,8 @@ class EnphaseTokenAuth(GatewayAuth):
     @property
     def auth(self) -> httpx.Auth | None:
         """Return the httpx auth object."""
-        # Token authentication uses an Authorization header
-        # instead of a httpx Auth object.
+        # Token based authentication uses an Authorization
+        # header instead of an httpx Auth object.
         return None
 
     @property
@@ -411,7 +411,7 @@ class EnphaseTokenAuth(GatewayAuth):
                     "username": self._enlighten_username
                 }
             )
-            _LOGGER.debug("Sucessfully retrieved a new token from Enlighten.")
+            _LOGGER.debug("Retrieved a new token from Enlighten.")
 
             return response.text
 

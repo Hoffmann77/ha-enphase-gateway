@@ -79,7 +79,9 @@ class GatewayFixture:
                 return_value=Response(200, text=jwt_token)
             )
             respx.get("/auth/check_jwt").mock(
-                return_value=Response(200, json={})
+                return_value=Response(
+                    200, text="<!DOCTYPE html><h2>Valid token.</h2>"
+                )
             )
 
     def mock_probing_endpoints(self, endpoints: list[str]):

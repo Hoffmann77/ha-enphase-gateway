@@ -390,7 +390,7 @@ class EnvoyLegacy(EnphaseGateway):
     )
 
     @gateway_property(endpoint="/info")
-    def info(self) -> EnsemblePowerDevices | None:
+    def info(self) -> Info | None:
         """Info model."""
         result = self.data.get("/info")
         if result:

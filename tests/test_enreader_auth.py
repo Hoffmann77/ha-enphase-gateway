@@ -55,7 +55,7 @@ async def test_auth(version: str, auth_class, gateway_class) -> None:
     to_mock = [endpoint.path for endpoint in gateway.probing_endpoints]
 
     # Mock the endpoints required for probing
-    fixture.mock_probing_endpoints(to_mock)
+    fixture.mock_endpoints(to_mock)
 
     await enreader.authenticate("username", "password")
 

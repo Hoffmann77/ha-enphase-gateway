@@ -58,10 +58,10 @@ class GatewayUpdateCoordinator(DataUpdateCoordinator):
             self,
             hass: HomeAssistant,
             entry: ConfigEntry,
-            reader: GatewayReader,
+            enreader: GatewayReader,
     ) -> None:
         """Initialize DataUpdateCoordinator for the gateway."""
-        self.gateway_reader = reader
+        self.gateway_reader = enreader
         self.config_entry = entry
         self._setup_complete = False
         self._cancel_token_refresh: CALLBACK_TYPE | None = None

@@ -255,7 +255,7 @@ class EnphaseGateway:
                     if value in (None, "", [], {}):
                         continue
 
-                if existing := endpoints[endpoint.path]:
+                if existing := endpoints.get(endpoint.path, False):
                     # Set the caching interval to the lowest value.
                     if endpoint.cache_for < existing.cache_for:
                         existing.cache_for = endpoint.cache_for

@@ -100,11 +100,15 @@ class GatewayFixture:
 
         method = request_data.get("method", "GET")
 
+        # Encode the text into bytes so we can use the `content` kwarg.
+        # Using the `text` kwarg would modify the content_type header.
+        content = text.encode()
+
         respx.request(method, endpoint).mock(
             return_value=Response(
                 response_data["status_code"],
                 headers=response_data.get("headers"),
-                text=text,
+                content=content,
             )
         )
 

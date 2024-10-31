@@ -19,6 +19,7 @@ from .descriptors import (
 )
 
 from .models import (
+    Info,
     ACBatteryStorage,
     EnsemblePowerDevices,
     EnsembleInventory,
@@ -134,7 +135,7 @@ class EnphaseGateway:
 
     """
 
-    VERBOSE_NAME = "Generic Enphase Gateway"
+    VERBOSE_NAME = "Enphase Gateway"
 
     def __new__(cls, *args, **kwargs) -> EnphaseGateway:
         """Create a new instance.
@@ -207,6 +208,11 @@ class EnphaseGateway:
         self.data = {}
         self.initial_update_finished = False
         self._required_endpoints = None
+
+    @property
+    def name(self) -> str:
+        """Return the verbose name of the gatway."""
+        return self.VERBOSE_NAME
 
     @property
     def properties(self) -> list[str]:
@@ -283,13 +289,13 @@ class EnphaseGateway:
 
     async def update(self, _request) -> None:
         """Update the gateway's data."""
-        force = True if not self.initial_update_finished else False
-
         for endpoint in self.required_endpoints:
-            endpoint.update(_request, force=force)
+            if not endpoint.needs_update:
+                continue
 
-        if not self.gateway.initial_update_finished:
-            self.gateway.initial_update_finished = True
+            self.data[endpoint.path] = endpoint.fetch(_request)
+
+        self.gateway.initial_update_finished = True
 
     async def probe(self, _request) -> None:
         """Run the gateway probes."""
@@ -382,6 +388,15 @@ class EnvoyLegacy(EnphaseGateway):
         r"<td>Since Installation</td>\s+<td>\s*(\d+|\d+\.\d+)\s*(Wh|kWh|MWh)</td>", # noqa
         "/production",
     )
+
+    @gateway_property(endpoint="/info")
+    def info(self) -> EnsemblePowerDevices | None:
+        """Info model."""
+        result = self.data.get("/info")
+        if result:
+            return Info.from_result(result)
+
+        return None
 
 
 class Envoy(EnphaseGateway):

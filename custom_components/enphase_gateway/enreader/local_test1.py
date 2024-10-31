@@ -16,6 +16,32 @@ from lxml import etree
 #from descriptors import ResponseDescriptor, JsonDescriptor, RegexDescriptor, PropertyDescriptor
 
 
+class Foo:
+    
+    def __init__(self, value):
+        self.value = value
+        
+        
+class Foo2:
+    
+    def __init__(self, value2):
+        self.value2 = value2
+
+
+foo = Foo(["value"])
+
+print(id(foo.value))
+
+
+foo2 = Foo2(foo.value)
+
+print(id(foo2.value2))
+
+foo2.value2.append("value_append")
+
+print(id(foo.value))
+print(id(foo2.value2))
+print(foo.value)
 
 
 

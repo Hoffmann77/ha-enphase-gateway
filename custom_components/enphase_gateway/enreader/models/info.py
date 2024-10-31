@@ -20,9 +20,9 @@ class Info:
     web_tokens: bool | None = None
 
     @classmethod
-    def from_response(cls, response: httpx.Response) -> Info:
+    def from_result(cls, result: str) -> Info:
         """Instantiate the instance from a response."""
-        xml = etree.fromstring(response.content)
+        xml = etree.fromstring(result)
 
         if (fw := xml.find("device/software")) is not None:
             firmware_version = AwesomeVersion(fw.text[1:])

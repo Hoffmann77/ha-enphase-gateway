@@ -27,7 +27,6 @@ class GatewayEndpoint:
 
         """
         self.path = path
-        self.data = None
         self.cache_for = cache_for
         self._timestamp = 0
 
@@ -36,26 +35,20 @@ class GatewayEndpoint:
         return f"Endpoint('{self.path}')"
 
     @property
-    def cache_expired(self) -> bool:
+    def needs_update(self) -> bool:
         """Return if the cache is expired."""
-        if (self._timestamp + self._cache_for) <= time.time():
+        if (self._timestamp + self._cache_for) < time.time():
             return True
 
         return False
 
-    async def update(self, request, force: bool = False) -> None:
-        """Fetch new data from the endpoint."""
-        if not self.cache_expired and not force:
-            return
-
-        self.data = await self.fetch(request)
-        self._timestamp = time.time()
-
     async def fetch(self, request):
         """Fetch the endpoint and return the decoded data."""
         response = await request(self.path)
-        _LOGGER.debug(f"fetched response: {response.headers}")
-        return self._decode_response(response)
+        decoded = self._decode_response(response)
+        self._timestamp = time.time()
+
+        return decoded
 
     def _decode_response(self, response):
         """Decode the response content."""

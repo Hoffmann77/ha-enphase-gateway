@@ -82,7 +82,7 @@ class GatewayReader:
         # For the future:
         # self._client_verify_ssl = client_verify_ssl
         # self._client_no_verify_ssl = client_no_verify_ssl
-        self._info = GatewayInfo(self.host, self._async_client)
+        # self._info = GatewayInfo(self.host, self._async_client)
 
     
 
@@ -90,7 +90,7 @@ class GatewayReader:
     def name(self) -> str | None:
         """Return the verbose name of the gateway."""
         if self.gateway:
-            return self.gateway.VERBOSE_NAME
+            return self.gateway.name
 
         return "Enphase Gateway"
 
@@ -288,7 +288,7 @@ class GatewayReader:
             # Worse sometimes http will redirect to https://localhost.
             response = await self._async_get(f"http://{self.host}/info")
 
-        return Info.from_response(response)
+        return Info.from_result(response.text)
 
     async def _detect_gateway(self, info: Info) -> EnphaseGateway:
         """Detect the Enphase gateway model.

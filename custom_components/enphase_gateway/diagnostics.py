@@ -49,36 +49,57 @@ async def _get_fixtures(enreader: GatewayReader) -> dict[str, Any]:
     for endpoint in FIXTURE_COLLECTION_ENDPOINTS:
         response = await enreader.request(endpoint)
 
-        request_data = {
-            "url": str(response.request.url),
-            "method": response.request.method,
-            "headers": dict(response.request.headers.items()),
+        data = {
+            "request": {
+                "url": str(response.request.url),
+                "method": response.request.method,
+                "headers": dict(response.request.headers.items()),
+            },
+            "response": {
+                "url": str(response.url),
+                "status_code": response.status_code,
+                "reason_phrase": response.reason_phrase,
+                "is_redirect": response.is_redirect,
+                "encoding": response.encoding,
+                "headers": dict(response.headers.items()),
+                "cookies": dict(response.cookies.items()),
+            }
         }
 
-        response_data = {
-            "url": str(response.url),
-            "status_code": response.status_code,
-            "reason_phrase": response.reason_phrase,
-            "is_redirect": response.is_redirect,
-            "encoding": response.encoding,
-            "headers": dict(response.headers.items()),
-            "cookies": dict(response.cookies.items()),
-        }
+        # request_data = {
+        #     "url": str(response.request.url),
+        #     "method": response.request.method,
+        #     "headers": dict(response.request.headers.items()),
+        # }
 
-        # Clean the meta data
-        _data = {"request": request_data, "response": response_data}
-        _data_str = json_dumps(_data)
+        # response_data = {
+        #     "url": str(response.url),
+        #     "status_code": response.status_code,
+        #     "reason_phrase": response.reason_phrase,
+        #     "is_redirect": response.is_redirect,
+        #     "encoding": response.encoding,
+        #     "headers": dict(response.headers.items()),
+        #     "cookies": dict(response.cookies.items()),
+        # }
+
+        # Redact sensitive data from the metadata.
+        redacted = json_dumps(data)
         for to_replace, placeholder in to_redact:
-            _data_str.replace(to_replace, placeholder)
+            redacted.replace(to_replace, placeholder)
 
-        fixture_data = json_loads(_data_str)
+        redacted_data = json_loads(redacted)
 
-        # Redact the serial number.
-        fixture_data["response"]["text"] = response.text.replace(
-            enreader.serial_number, CLEAN_SERIAL
+        # Decode the response content into text.
+        # Use `backslashreplace` so we do not lose any data.
+        response_text = response.content.decode(
+            encoding="utf-8", errors="backslashreplace"
         )
 
-        fixtures[endpoint] = {"default": fixture_data}
+        # Redact the serial number from the response text.
+        response_text.replace(enreader.serial_number, CLEAN_SERIAL)
+
+        redacted_data["response"]["text"] = response_text
+        fixtures[endpoint] = {"default": redacted_data}
 
     return fixtures
 

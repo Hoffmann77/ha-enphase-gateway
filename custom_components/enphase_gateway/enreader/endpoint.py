@@ -2,6 +2,10 @@
 
 import time
 import json
+import logging
+
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class GatewayEndpoint:
@@ -50,7 +54,7 @@ class GatewayEndpoint:
     async def fetch(self, request):
         """Fetch the endpoint and return the decoded data."""
         response = await request(self.path)
-
+        _LOGGER.debug("fetched response: ", response.text)
         return self._decode_response(response)
 
     def _decode_response(self, response):

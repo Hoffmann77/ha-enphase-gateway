@@ -502,16 +502,13 @@ class EnvoySMetered(EnvoyS):
         """Probe the meter configuration."""
         base_expr = "$[?(@.state=='enabled' & @.measurementType=='{}')].eid"
         self.production_meter = JsonDescriptor.resolve(
-            base_expr.format("production"),
-            data.get("/ivp/meters", {}),
+            base_expr.format("production"), data,
         )
         self.net_consumption_meter = JsonDescriptor.resolve(
-            base_expr.format("net-consumption"),
-            data.get("/ivp/meters", {}),
+            base_expr.format("net-consumption"), data
         )
         self.total_consumption_meter = JsonDescriptor.resolve(
-            base_expr.format("total-consumption"),
-            data.get("/ivp/meters", {}),
+            base_expr.format("total-consumption"), data
         )
         _LOGGER.debug("Probe: 'ivp_meters_probe' finished")
 

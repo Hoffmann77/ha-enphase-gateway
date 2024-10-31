@@ -114,7 +114,7 @@ class JsonDescriptor(BaseDescriptor):
     @classmethod
     def resolve(cls, path: str, data: dict, default: str | int | float = None):
         """Classmethod to resolve a given jsonpath using jsonpath-ng."""
-        if path == "":
+        if path == "" or data is None:
             return data
 
         jsonpath_expr = parse(dedent(path))

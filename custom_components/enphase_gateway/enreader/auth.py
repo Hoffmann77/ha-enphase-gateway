@@ -509,10 +509,9 @@ class EnphaseTokenAuth(GatewayAuth):
 
         try:
             resp = await async_get(
-                async_client,
                 f"https://{self._host}/auth/check_jwt",
+                async_client,
                 headers={"Authorization": f"Bearer {token}"},
-                retries=1,
             )
         except httpx.HTTPStatusError as err:
             if resp.status_code == 401:

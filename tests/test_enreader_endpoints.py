@@ -49,7 +49,7 @@ async def test_with_3_7_0_firmware() -> None:
         [endpoint.path for endpoint in gateway.probing_endpoints]
     )
 
-    enreader.gateway = gateway._probe_gateway(gateway)
+    enreader.gateway = await enreader._probe_gateway(gateway)
 
     # Mock the endpoints required for probing
     fixture.mock_endpoints(

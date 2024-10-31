@@ -293,7 +293,7 @@ class EnphaseGateway:
             if not endpoint.needs_update:
                 continue
 
-            self.data[endpoint.path] = endpoint.fetch(_request)
+            self.data[endpoint.path] = await endpoint.fetch(_request)
 
         self.gateway.initial_update_finished = True
 

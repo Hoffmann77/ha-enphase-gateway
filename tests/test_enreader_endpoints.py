@@ -57,8 +57,8 @@ async def test_with_3_7_0_firmware() -> None:
     )
 
     # Update twice
-    enreader.update()
-    enreader.update()
+    await enreader.update()
+    await enreader.update()
 
     assert isinstance(enreader.gateway, EnvoyLegacy)
 

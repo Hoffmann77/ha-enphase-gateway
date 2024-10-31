@@ -60,7 +60,7 @@ class GatewayEndpoint:
     def _decode_response(self, response):
         """Decode the response content."""
         content_type = response.headers.get("content-type", "application/json")
-
+        _LOGGER.debug(f"content_type: {content_type}")
         if content_type == "application/json":
             return json.loads(response.content)
         elif content_type in ("text/xml", "application/xml"):

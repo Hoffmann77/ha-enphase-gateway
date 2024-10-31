@@ -20,7 +20,7 @@ class Info:
     web_tokens: bool | None = None
 
     @classmethod
-    def from_result(cls, result: str) -> Info:
+    def from_result(cls, result: bytes) -> Info:
         """Instantiate the instance from a response."""
         xml = etree.fromstring(result)
 

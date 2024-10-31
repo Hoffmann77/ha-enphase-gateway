@@ -57,6 +57,6 @@ class GatewayEndpoint:
         if "application/json" in content_type:
             return json.loads(response.content)
         elif content_type in ("text/xml", "application/xml"):
-            return response.text
+            return response.content
         else:
             return response.text

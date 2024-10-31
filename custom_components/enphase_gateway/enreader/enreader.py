@@ -288,7 +288,7 @@ class GatewayReader:
             # Worse sometimes http will redirect to https://localhost.
             response = await self._async_get(f"http://{self.host}/info")
 
-        return Info.from_result(response.text)
+        return Info.from_result(response.content)
 
     async def _detect_gateway(self, info: Info) -> EnphaseGateway:
         """Detect the Enphase gateway model.

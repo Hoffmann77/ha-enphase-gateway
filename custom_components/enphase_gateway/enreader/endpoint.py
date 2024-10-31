@@ -37,7 +37,7 @@ class GatewayEndpoint:
     @property
     def needs_update(self) -> bool:
         """Return if the cache is expired."""
-        if (self._timestamp + self._cache_for) < time.time():
+        if (self._timestamp + self.cache_for) < time.time():
             return True
 
         return False

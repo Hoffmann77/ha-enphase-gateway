@@ -21,8 +21,15 @@ def _retrieve_token() -> str:
     """
     LOGIN_URL = "https://enlighten.enphaseenergy.com/login/login.json?"
     TOKEN_URL = "https://entrez.enphaseenergy.com/tokens"
-
-
+    
+    
+    client = httpx.Client(verify=False)
+    
+    response = client.get("http://envoy.local/info")
+    
+    data = json.loads(response.content)
+    
+    return
     
     with httpx.Client(verify=True) as client:
         # Login to Enlighten to obtain a session ID.

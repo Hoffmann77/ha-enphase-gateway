@@ -295,7 +295,7 @@ class EnphaseGateway:
 
             self.data[endpoint.path] = await endpoint.fetch(_request)
 
-        self.gateway.initial_update_finished = True
+        self.initial_update_finished = True
 
     async def probe(self, _request) -> None:
         """Run the gateway probes."""

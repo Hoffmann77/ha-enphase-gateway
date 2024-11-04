@@ -37,7 +37,6 @@ _LOGGER = logging.getLogger(__name__)
 @respx.mock
 async def test_missing_auth() -> None:
     """Test `authenticate()` gets called before `update()`."""
-
     enreader = GatewayReader("127.0.0.1")
 
     with pytest.raises(GatewayAuthenticationRequired):
@@ -77,7 +76,7 @@ async def test_legacy_auth(version: str, gateway_class) -> None:
 @pytest.mark.parametrize(
     "username, password",
     [
-         ("installer", ""),
+         ("installer1", ""),
          ("envoy", ""),
     ],
 )

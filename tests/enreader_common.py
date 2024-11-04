@@ -47,10 +47,12 @@ class GatewayFixture:
 
         return path
 
+    def mock_info_endpoint(self):
+        """Set up the response mock for the /info endpoint."""
+        self.mock("/info")
+
     def mock_auth_endpoints(self, mock_enlighten: bool = False):
         """Set up the response mocks for the authentication endpoints."""
-        self.mock("/info")
-        
         jwt_token = jwt.encode(
             payload={"name": "mock_token", "exp": 1707837780},
             key="secret",
@@ -83,7 +85,7 @@ class GatewayFixture:
             )
 
     def mock_endpoints(self, endpoints: list[str]):
-        """Set up the response mocks for the probing endpoints."""
+        """Set up the response mocks for the given endpoints."""
         for endpoint in endpoints:
             self.mock(endpoint)
             

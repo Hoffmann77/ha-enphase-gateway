@@ -31,6 +31,7 @@ _LOGGER = logging.getLogger(__name__)
 async def test_with_3_7_0_firmware() -> None:
     """Test the authentication process."""
     fixture = GatewayFixture("3.7.0")
+    fixture.mock_info_endpoint()
     fixture.mock_auth_endpoints(mock_enlighten=False)
 
     enreader = GatewayReader("127.0.0.1")

@@ -23,13 +23,13 @@ def _retrieve_token() -> str:
     TOKEN_URL = "https://entrez.enphaseenergy.com/tokens"
     
     
-    client = httpx.Client(verify=False)
+    # client = httpx.Client(verify=False)
     
-    response = client.get("http://envoy.local/info")
+    # response = client.get("http://envoy.local/info")
     
-    data = json.loads(response.content)
+    # data = json.loads(response.content)
     
-    return
+    # return
     
     with httpx.Client(verify=True) as client:
         # Login to Enlighten to obtain a session ID.
@@ -37,7 +37,7 @@ def _retrieve_token() -> str:
             LOGIN_URL,
             data={
                 "user[email]": "uv-hoffmann@arcor.de",
-                "user[password]": "Dublin08",
+                "user[password]": "Duublin08",
             }
         )
         
@@ -56,14 +56,16 @@ def _retrieve_token() -> str:
                 "cookies": dict(response.cookies.items()),
             },
         }
-
-        with open("login_meta_wrong_pw.json", 'w') as f:
+        
+        abnormal = "password_wrong"
+        
+        with open(f"enlighten/login_meta_{abnormal}.json", 'w') as f:
             json.dump(meta, f)
 
-        with open("login_response_wrong_pw", 'w') as f:
+        with open(f"enlighten/login_response_{abnormal}", 'w') as f:
             f.write(response.text)
 
-        
+        return
 
         enlighten_data = json.loads(response.text)
         

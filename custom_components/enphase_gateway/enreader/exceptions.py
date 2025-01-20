@@ -18,6 +18,10 @@ class AuthenticationError(GatewayError):
         self.response = response
 
 
+class AuthenticationConfigurationError(AuthenticationError):
+    """Exception raised when authentication hasn't been setup."""
+
+
 class EnlightenAuthenticationError(AuthenticationError):
     """Exception raised when unable to authentation to the Enlighten cloud."""
 
@@ -79,6 +83,10 @@ class InvalidTokenError(GatewayError):
 
 
 # Setup errors:
+
+class ConfigurationError(GatewayError):
+    """Exception raised for errors during gateway setup."""    
+
 
 class GatewaySetupError(GatewayError):
     """Exception raised for errors during gateway setup."""

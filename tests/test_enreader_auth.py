@@ -46,13 +46,15 @@ async def test_missing_auth() -> None:
 @pytest.mark.parametrize(
     "version, gateway_class",
     [
-         ("3.7.0", EnvoyLegacy),
-         ("3.9.36", Envoy),
+         ("3.7.0", LegacyAuth, EnvoyLegacy),
+         ("3.9.36", LegacyAuth, Envoy),
+         ("7.6.175_standard", EnphaseTokenAuth, EnvoyS),
+         ("7.6.175_metered", EnphaseTokenAuth, EnvoySMetered),
     ],
 )
 @pytest.mark.asyncio
 @respx.mock
-async def test_legacy_auth(version: str, gateway_class) -> None:
+async def test_auth_process(version: str, auth_class, gateway_class) -> None:
     """Test the authentication process."""
     fixture = GatewayFixture(version)
     fixture.mock_info_endpoint()
@@ -69,14 +71,14 @@ async def test_legacy_auth(version: str, gateway_class) -> None:
 
     await enreader.authenticate("username", "password")
 
-    assert isinstance(enreader.auth, LegacyAuth)
+    assert isinstance(enreader.auth, auth_class)
     assert isinstance(enreader.gateway, gateway_class)
 
 
 @pytest.mark.parametrize(
     "username, password",
     [
-         ("installer1", ""),
+         ("installer", ""),
          ("envoy", ""),
     ],
 )
@@ -104,7 +106,7 @@ async def test_legacy_auth_with_known_usernames(
 
     await enreader.authenticate(username, password)
 
-    assert enreader.auth is not None
+    assert isinstance(enreader.auth, LegacyAuth)
 
 
 @pytest.mark.parametrize(
@@ -136,3 +138,6 @@ async def test_token_auth(version: str, gateway_class) -> None:
 
     assert isinstance(enreader.auth, EnphaseTokenAuth)
     assert isinstance(enreader.gateway, gateway_class)
+
+
+# expired token and no enlighten credentials

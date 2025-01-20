@@ -174,9 +174,9 @@ class EnphaseTokenAuth(GatewayAuth):
     def __init__(
             self,
             host: str,
-            enlighten_username: str,
-            enlighten_password: str,
-            serial_number: str,
+            enlighten_username: str | None = None,
+            enlighten_password: str | None = None,
+            serial_number: str | None = None,
             token_raw: str | None = None,
     ) -> None:
         """Initialize the token based authentication.
@@ -251,12 +251,18 @@ class EnphaseTokenAuth(GatewayAuth):
     @property
     def to_redact(self) -> list[tuple[str, str]]:
         """Return a list of tuples containing strings to redact."""
-        to_redact = [
-            (self._host, "<<host>>"),
-            (self._enlighten_username, "<<enlighten_username>>"),
-            (self._enlighten_password, "<<enlighten_password>>"),
-            (self._token, "<<enphase_token>>"),
-        ]
+        to_redact = [(self._host, "<<host>>")]
+
+        if self._enlighten_username:
+            to_redact.append(
+                (self._enlighten_username, "<<enlighten_username>>")
+            )
+        if self._enlighten_password:
+            to_redact.append(
+                (self._enlighten_password, "<<enlighten_password>>")
+            )
+        if self._token:
+            to_redact.append((self._token, "<<enphase_token>>"))
 
         return to_redact
 
@@ -279,7 +285,7 @@ class EnphaseTokenAuth(GatewayAuth):
             Raised if the authentication failed.
 
         """
-        _LOGGER.debug("Setting up `EnphaseTokenAuth` instance.")
+        _LOGGER.debug("Setting up Token based Authentication.")
         if not self._token:
             await self._refresh_token()
 
@@ -386,6 +392,12 @@ class EnphaseTokenAuth(GatewayAuth):
         """Retrieve a new Enphase JWT token from Enlighten."""
         _LOGGER.debug("Retrieving a new token from Enlighten...")
 
+        if not (self._enlighten_username and self._enlighten_password):
+            pass
+        
+        if not self._serial_number:
+            pass
+        
         async with httpx.AsyncClient(verify=True) as async_client:
             # Login to Enlighten to obtain a session ID.
             response = await self._async_post_enlighten(

@@ -172,7 +172,7 @@ class GatewayReader:
         )
 
         if info.web_tokens:
-            # Firmware using token based authentication
+            # Firmware using token based authentication.
             if token or (username and password):
                 auth = EnphaseTokenAuth(
                     self.host,
@@ -181,6 +181,7 @@ class GatewayReader:
                     serial_number=info.serial_number,
                     token_raw=token,
                 )
+                
         else:
             # Firmware using old installer/envoy authentication
             if not username or username == "installer":
@@ -195,6 +196,8 @@ class GatewayReader:
 
             if username and password:
                 auth = LegacyAuth(self.host, username, password)
+            
+                
 
         if not auth:
             _LOGGER.error(

@@ -5,17 +5,17 @@ from __future__ import annotations
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.entity import EntityDescription
 
-from .coordinator import GatewayCoordinator
+from .coordinator import GatewayUpdateCoordinator
 
 
-class GatewayCoordinatorEntity(CoordinatorEntity[GatewayCoordinator]):
+class GatewayCoordinatorEntity(CoordinatorEntity[GatewayUpdateCoordinator]):
     """Coordinator entity."""
 
     _attr_has_entity_name = True
 
     def __init__(
             self,
-            coordinator: GatewayCoordinator,
+            coordinator: GatewayUpdateCoordinator,
             description: EntityDescription,
     ) -> None:
         """Initialize the entity."""

@@ -80,10 +80,10 @@ class GatewayUpdateCoordinator(DataUpdateCoordinator):
             # always_update=False, # TODO: Added in ha 2023.9
         )
 
-    async def async_remove_store(self) -> None:
+    async def async_remove_store(self, hass) -> None:
         """Remove all data from the store."""
         store = Store(
-            self.hass,
+            hass,
             STORAGE_VERSION,
             ".".join([STORAGE_KEY, self.config_entry.entry_id]),
         )
@@ -141,7 +141,7 @@ class GatewayUpdateCoordinator(DataUpdateCoordinator):
             return
         self._cancel_token_refresh = async_track_time_interval(
             self.hass,
-            self._async_refresh_token_if_needed,
+            self._async_refresh_auth_if_needed,
             TOKEN_REFRESH_CHECK_INTERVAL,
             cancel_on_shutdown=True,
         )

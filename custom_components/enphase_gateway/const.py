@@ -2,7 +2,7 @@
 
 from homeassistant.const import Platform
 
-from .gateway_reader.exceptions import (
+from .enreader.exceptions import (
     EnlightenAuthenticationError,
     EnlightenCommunicationError,
     GatewayAuthenticationError,

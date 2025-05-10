@@ -30,7 +30,7 @@ from homeassistant.const import (
 
 from .const import DOMAIN, CONF_INVERTERS, CONF_ENCHARGE_ENTITIES
 from .entity import GatewayCoordinatorEntity
-from .coordinator import GatewayCoordinator
+from .coordinator import GatewayUpdateCoordinator
 from .gateway_reader.gateway import BaseGateway
 from .gateway_reader.models import (
     EnsemblePower,
@@ -501,7 +501,8 @@ async def async_setup_entry(
         async_add_entities: AddEntitiesCallback
 ) -> None:
     """Set up envoy sensor platform."""
-    coordinator = hass.data[DOMAIN][config_entry.entry_id]
+    coordinator = config_entry.runtime_data
+    # coordinator = hass.data[DOMAIN][config_entry.entry_id]
     options = config_entry.options
     conf_inverters = options.get(CONF_INVERTERS, False)
     conf_encharge_entity = options.get(CONF_ENCHARGE_ENTITIES, False)
@@ -584,7 +585,7 @@ class GatewaySensorEntity(GatewayCoordinatorEntity, SensorEntity):
 
     def __init__(
         self,
-        coordinator: GatewayCoordinator,
+        coordinator: GatewayUpdateCoordinator,
         description: SensorEntityDescription,
     ) -> None:
         """Initialize the sensor entity."""

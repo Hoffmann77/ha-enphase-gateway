@@ -57,17 +57,17 @@ class GatewayAuth(ABC):
     def to_redact(self) -> list[tuple[str, str]]:
         """Return a list of tuples containing strings to redact."""
 
-    @abstractmethod
     async def setup(self, client: httpx.AsyncClient) -> None:
         """Set up the authentication method."""
+        pass
 
-    @abstractmethod
     async def refresh(self, client: httpx.AsyncClient) -> None:
         """Refresh the authentication method."""
+        pass
 
-    @abstractmethod
     async def resolve_401(self, async_client: httpx.AsyncClient) -> None:
         """Handle a HTTP 401 Unauthorized response."""
+        pass
 
 
 class LegacyAuth(GatewayAuth):
@@ -115,20 +115,9 @@ class LegacyAuth(GatewayAuth):
             (self._password, "<<password>>"),
         ]
 
-    async def setup(self, client: httpx.AsyncClient) -> None:
-        """Set up the authentication method."""
-        _LOGGER.debug("Setting up `LegacyAuth` instance.")
-        pass
-
-    async def refresh(self, client: httpx.AsyncClient) -> None:
-        """Refresh the authentication method."""
-
-    async def resolve_401(self, async_client):
-        """Resolve a 401 Unauthorized response."""
-
 
 class EnphaseTokenAuth(GatewayAuth):
-    """Class used for Enphase token authentication.
+    """Authentication class using Enphase tokens.
 
     Parameters
     ----------
@@ -169,6 +158,7 @@ class EnphaseTokenAuth(GatewayAuth):
     """
 
     LOGIN_URL = "https://enlighten.enphaseenergy.com/login/login.json?"
+
     TOKEN_URL = "https://entrez.enphaseenergy.com/tokens"
 
     def __init__(
@@ -179,12 +169,12 @@ class EnphaseTokenAuth(GatewayAuth):
             serial_number: str | None = None,
             token_raw: str | None = None,
     ) -> None:
-        """Initialize the token based authentication.
+        """Initialize authentication class.
 
         Parameters
         ----------
         host : str
-            Hostname.
+            Hostname of the Enphase gateway.
         enlighten_username : str
             Username for the Enlighten platform.
         enlighten_password : str
@@ -204,9 +194,12 @@ class EnphaseTokenAuth(GatewayAuth):
         self._enlighten_username = enlighten_username
         self._enlighten_password = enlighten_password
         self._serial_number = serial_number
-        self._token = token_raw
+        self._token = None
         self._token_exp_date = None
         self._cookies = None
+
+        # Use the setter to decode the raw Enphase token.
+        self.token = token_raw
 
     @property
     def protocol(self) -> str:
@@ -215,18 +208,20 @@ class EnphaseTokenAuth(GatewayAuth):
 
     @property
     def auth(self) -> httpx.Auth | None:
-        """Return the httpx auth object."""
-        # Token based authentication uses an Authorization
-        # header instead of an httpx Auth object.
+        """Return the httpx auth object.
+
+        Token based authentication uses an Authorization header instead.
+
+        """
         return None
 
     @property
     def headers(self) -> dict[str, str] | None:
         """Return the headers for token authentication."""
-        if self._token:
-            return {"Authorization": f"Bearer {self._token}"}
+        if not self.token:
+            return None
 
-        return None
+        return {"Authorization": f"Bearer {self._token}"}
 
     @property
     def cookies(self) -> dict[str, str] | None:
@@ -238,10 +233,29 @@ class EnphaseTokenAuth(GatewayAuth):
         """Return the Enphase token."""
         return self._token
 
+    @token.setter
+    def token(self, token: str) -> None:
+        """Set the Enphase token."""
+        if token is None:
+            pass
+
+        decoded = self._decode_token(token)
+
+        self._token = token
+        self._cookies = None
+        self._token_exp_date = datetime.fromtimestamp(
+            decoded["exp"], tz=timezone.utc
+        )
+
+        _LOGGER.debug(f"Set new token, valid until: {self._token_exp_date}")
+
     @property
     def is_stale(self) -> bool:
         """Return if the auth object is stale."""
         # TODO: handle self._token_exp_date = None
+        if self.token is None:
+            return True
+
         exp_time = self._token_exp_date - timedelta(days=30)
         if datetime.now(tz=timezone.utc) > exp_time:
             return True
@@ -261,8 +275,8 @@ class EnphaseTokenAuth(GatewayAuth):
             to_redact.append(
                 (self._enlighten_password, "<<enlighten_password>>")
             )
-        if self._token:
-            to_redact.append((self._token, "<<enphase_token>>"))
+        if self.token:
+            to_redact.append((self.token, "<<enphase_token>>"))
 
         return to_redact
 
@@ -286,10 +300,10 @@ class EnphaseTokenAuth(GatewayAuth):
 
         """
         _LOGGER.debug("Setting up Token based Authentication.")
-        if not self._token:
+        if not self.token:
             await self._refresh_token()
 
-        if not self._token:
+        if not self.token:
             raise GatewayAuthenticationError(
                 "Could not obtain a token for token authentication"
             )
@@ -347,17 +361,18 @@ class EnphaseTokenAuth(GatewayAuth):
 
         token = await self._retrieve_token()
         if token:
+            self.token = token
             # Decode the token to verify the integrity
-            token_payload = self._decode_token(token)
+            # token_payload = self._decode_token(token)
 
-            # Set the new token, expiration date and reset the cookies
-            self._token = token
-            self._cookies = None
-            self._token_exp_date = datetime.fromtimestamp(
-                token_payload["exp"], tz=timezone.utc
-            )
+            # # Set the new token, expiration date and reset the cookies
+            # self._token = token
+            # self._cookies = None
+            # self._token_exp_date = datetime.fromtimestamp(
+            #     token_payload["exp"], tz=timezone.utc
+            # )
 
-            _LOGGER.debug(f"New token valid until: {self._token_exp_date}")
+            # _LOGGER.debug(f"New token valid until: {self._token_exp_date}")
 
     async def _refresh_cookies(self, async_client: httpx.AsyncClient) -> None:
         """Try to refresh the cookies.
@@ -370,7 +385,7 @@ class EnphaseTokenAuth(GatewayAuth):
         """
         _LOGGER.debug("Refreshing the cookies")
 
-        cookies = await self._check_jwt(async_client, self._token)
+        cookies = await self._check_jwt(async_client, self.token)
         if cookies is not None:
             self._cookies = cookies
 
@@ -394,10 +409,10 @@ class EnphaseTokenAuth(GatewayAuth):
 
         if not (self._enlighten_username and self._enlighten_password):
             pass
-        
+
         if not self._serial_number:
             pass
-        
+
         async with httpx.AsyncClient(verify=True) as async_client:
             # Login to Enlighten to obtain a session ID.
             response = await self._async_post_enlighten(

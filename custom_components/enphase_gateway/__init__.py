@@ -74,12 +74,12 @@ async def async_unload_entry(
 ) -> bool:
     """Unload a config entry."""
     coordinator: GatewayUpdateCoordinator = entry.runtime_data
-    coordinator.async_cancel_token_refresh()
+    coordinator._cancel_token_refresh()
 
     unload = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload:
         # Remove the store data.
-        await coordinator.async_remove_store(hass, entry)
+        await coordinator.async_remove_store(hass)
 
     return unload
 

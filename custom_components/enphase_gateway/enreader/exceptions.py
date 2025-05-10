@@ -4,7 +4,14 @@
 
 
 class GatewayError(Exception):
-    """Base Exception."""
+    """Base Exception for errors related to the Enphase gateway."""
+
+
+
+
+
+
+
 
 
 # Authentication errors --------------------------------------------------->
@@ -16,6 +23,15 @@ class AuthenticationError(GatewayError):
         super().__init__(message)
         self.request = request
         self.response = response
+
+
+class GatewayAuthError(AuthenticationError):
+    """Exception raised when unable to authenticate to the Enphase gateway."""
+
+
+class GatewayAuthConfigError(AuthenticationError):
+    """Exception raised when unable to authenticate to the Enphase gateway."""
+
 
 
 class AuthenticationConfigurationError(AuthenticationError):
@@ -85,7 +101,7 @@ class InvalidTokenError(GatewayError):
 # Setup errors:
 
 class ConfigurationError(GatewayError):
-    """Exception raised for errors during gateway setup."""    
+    """Exception raised for errors during gateway setup."""
 
 
 class GatewaySetupError(GatewayError):

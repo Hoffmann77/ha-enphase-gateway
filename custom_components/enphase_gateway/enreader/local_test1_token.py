@@ -21,26 +21,26 @@ def _retrieve_token() -> str:
     """
     LOGIN_URL = "https://enlighten.enphaseenergy.com/login/login.json?"
     TOKEN_URL = "https://entrez.enphaseenergy.com/tokens"
-    
-    
+
+
     # client = httpx.Client(verify=False)
-    
+
     # response = client.get("http://envoy.local/info")
-    
+
     # data = json.loads(response.content)
-    
+
     # return
-    
+
     with httpx.Client(verify=True) as client:
         # Login to Enlighten to obtain a session ID.
         response = client.post(
             LOGIN_URL,
             data={
-                "user[email]": "uv-hoffmann@arcor.de",
-                "user[password]": "Duublin08",
+                "user[email]": "",
+                "user[password]": "",
             }
         )
-        
+
         meta = {
             "request": {
                 "url": str(response.request.url),
@@ -56,9 +56,9 @@ def _retrieve_token() -> str:
                 "cookies": dict(response.cookies.items()),
             },
         }
-        
+
         abnormal = "password_wrong"
-        
+
         with open(f"enlighten/login_meta_{abnormal}.json", 'w') as f:
             json.dump(meta, f)
 
@@ -68,10 +68,10 @@ def _retrieve_token() -> str:
         return
 
         enlighten_data = json.loads(response.text)
-        
+
         # enlighten_data = {}
         # enlighten_data["session_id"] = ""
-        
+
         # Use the session ID to retrieve a new token.
         response = client.post(
             TOKEN_URL,
@@ -81,7 +81,7 @@ def _retrieve_token() -> str:
                 "username": ""
             }
         )
-        
+
         meta = {
             "request": {
                 "url": str(response.request.url),
@@ -97,15 +97,15 @@ def _retrieve_token() -> str:
                 "cookies": dict(response.cookies.items()),
             },
         }
-        
+
         abnormal = "missing_session_id"
-        
+
         with open(f"token_meta_{abnormal}.json", 'w') as f:
             json.dump(meta, f)
 
         with open(f"token_response_{abnormal}", 'w') as f:
             f.write(response.text)
-        
+
 
 
 

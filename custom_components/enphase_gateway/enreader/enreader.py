@@ -82,9 +82,9 @@ class GatewayReader:
         # For the future:
         # self._client_verify_ssl = client_verify_ssl
         # self._client_no_verify_ssl = client_no_verify_ssl
-        # self._info = GatewayInfo(self.host, self._async_client)
+        self._info = GatewayInfo(self.host, self._async_client)
 
-    
+
 
     @property
     def name(self) -> str | None:
@@ -181,7 +181,7 @@ class GatewayReader:
                     serial_number=info.serial_number,
                     token_raw=token,
                 )
-                
+
         else:
             # Firmware using old installer/envoy authentication
             if not username or username == "installer":
@@ -196,8 +196,8 @@ class GatewayReader:
 
             if username and password:
                 auth = LegacyAuth(self.host, username, password)
-            
-                
+
+
 
         if not auth:
             _LOGGER.error(
@@ -338,5 +338,5 @@ class GatewayReader:
         return gateway
 
     def _get_async_client(self) -> httpx.AsyncClient:
-        """Return default httpx client."""
+        """Return the async httpx client."""
         return httpx.AsyncClient(verify=False, timeout=5)

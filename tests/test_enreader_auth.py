@@ -59,7 +59,7 @@ async def test_auth_process(version: str, auth_class, gateway_class) -> None:
     fixture = GatewayFixture(version)
     fixture.mock_info_endpoint()
 
-    enreader = GatewayReader("127.0.0.1")
+    enreader = GatewayReader(host="127.0.0.1")
 
     # Get the endpoints required for probing
     info = await enreader._get_info()
@@ -92,7 +92,7 @@ async def test_legacy_auth_with_known_usernames(
     fixture = GatewayFixture("3.9.36")
     fixture.mock_info_endpoint()
 
-    enreader = GatewayReader("127.0.0.1")
+    enreader = GatewayReader(host="127.0.0.1")
 
     # Detect the gateway class before we call `authenticate()`
     # so we can mock the endpoints used during authentication.
@@ -124,7 +124,7 @@ async def test_token_auth(version: str, gateway_class) -> None:
     fixture.mock_info_endpoint()
     fixture.mock_auth_endpoints(mock_enlighten=True)
 
-    enreader = GatewayReader("127.0.0.1")
+    enreader = GatewayReader(host="127.0.0.1")
 
     # Get the endpoints required for probing
     info = await enreader._get_info()

@@ -1,0 +1,78 @@
+{
+    "version": "3.7.0",
+    "gateway": "Envoy-R",
+    "endpoints": {
+        "/info": {
+            "default": {
+                "request": {},
+                "response": {
+                    "status_code": 200,
+                    "headers": {
+                        "content-type": "text/xml"
+                    },
+                    "text_path": "info"
+                }
+            }
+        },
+        "/ivp/ensemble/dry_contacts": {
+            "default": {
+                "request": {},
+                "response": {
+                    "status_code": 404,
+                    "headers": {
+                        "content-type": "application/json; charset=ISO-8859-4"
+                    },
+                    "text_path": "ivp_ensemble_dry_contacts"
+                }
+            }
+        },
+        "/ivp/ensemble/inventory": {
+            "default": {
+                "request": {},
+                "response": {
+                    "status_code": 404,
+                    "headers": {
+                        "content-type": "application/json; charset=ISO-8859-4"
+                    },
+                    "text_path": "ivp_ensemble_inventory"
+                }
+            }
+        },
+        "/ivp/ss/dry_contact_settings": {
+            "default": {
+                "request": {},
+                "response": {
+                    "status_code": 404,
+                    "headers": {
+                        "content-type": "application/json; charset=ISO-8859-4"
+                    },
+                    "text_path": "ivp_ss_dry_contact_settings"
+                }
+            }
+        },
+        "/production": {
+            "default": {
+                "request": {},
+                "response": {
+                    "status_code": 200,
+                    "headers": {
+                        "content-type": "text/html"
+                    },
+                    "text_path": "production"
+                }
+            }
+        },
+        "/production.json": {
+            "default": {
+                "request": {},
+                "response": {
+                    "status_code": 200,
+                    "headers": {
+                        "content-type": "text/html"
+                    },
+                    "text_path": "production.json"
+                }
+            }
+        }
+    }
+}

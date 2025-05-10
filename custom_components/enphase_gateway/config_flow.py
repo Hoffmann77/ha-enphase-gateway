@@ -20,7 +20,7 @@ from homeassistant.const import (
     CONF_USERNAME,
 )
 
-from .gateway_reader import GatewayReader
+from .enreader import GatewayReader
 from .exceptions import CannotConnect
 from .const import (
     DOMAIN, CONF_SERIAL_NUM, CONF_CACHE_TOKEN, CONF_USE_LEGACY_NAME,
@@ -43,12 +43,13 @@ async def validate_input(
 ) -> GatewayReader:
     """Validate that the user input allows us to connect."""
     gateway_reader = GatewayReader(
-        host,
-        get_async_client(hass, verify_ssl=False)
+        host=host,
+        async_client_verify_ssl=get_async_client(hass, verify_ssl=True),
+        async_client_no_verify_ssl=get_async_client(hass, verify_ssl=False),
     )
-    await gateway_reader.prepare()
+    # await gateway_reader.prepare()
     await gateway_reader.authenticate(username=username, password=password)
-    await gateway_reader.update(limit_endpoints=ALLOWED_ENDPOINTS)
+    await gateway_reader.update()
     return gateway_reader
 
 

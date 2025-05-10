@@ -2,7 +2,7 @@
 
 from homeassistant.const import Platform
 
-from .gateway_reader.exceptions import (
+from .enreader.exceptions import (
     EnlightenAuthenticationError,
     EnlightenCommunicationError,
     GatewayAuthenticationError,
@@ -60,3 +60,26 @@ CONF_GET_INVERTERS = "get_inverters"
 CONF_ENCHARGE_ENTITIES = "encharge_entities"
 CONF_USE_LEGACY_NAME = "use_lagacy_name"
 CONF_INVERTERS = "inverters_config"
+
+FIXTURE_COLLECTION_ENDPOINTS = (
+    "/info",
+    "/api/v1/production",
+    "/api/v1/production/inverters",
+    "/production",
+    "/production.json",
+    "/production.json?details=1",
+    "/ivp/ensemble/power",
+    "/ivp/ensemble/inventory",
+    "/ivp/ensemble/dry_contacts",
+    "/ivp/ensemble/status",
+    "/ivp/ensemble/secctrl",
+    "/ivp/ss/dry_contact_settings",
+    "/admin/lib/tariff",
+    "/ivp/ss/gen_config",
+    "/ivp/ss/gen_schedule",
+    "/ivp/sc/pvlimit",
+    "/ivp/ss/pel_settings",
+    "/ivp/ensemble/generator",
+    "/ivp/meters",
+    "/ivp/meters/readings",
+)

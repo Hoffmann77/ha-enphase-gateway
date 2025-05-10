@@ -32,7 +32,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up gateway binary sensor platform."""
     # data = hass.data[DOMAIN][config_entry.entry_id]
-    coordinator = hass.data[DOMAIN][config_entry.entry_id]
+    coordinator = config_entry.runtime_data
     # data = coordinator.data
     name = coordinator.name
 

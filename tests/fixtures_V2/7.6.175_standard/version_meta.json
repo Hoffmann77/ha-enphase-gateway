@@ -1,0 +1,106 @@
+{
+    "version": "7.6.175",
+    "gateway": "Envoy-S Standard",
+    "endpoints": {
+        "/api/v1/production": {
+            "default": {
+                "request": {},
+                "response": {
+                    "status_code": 200,
+                    "headers": {
+                        "content-type": "application/json"
+                    },
+                    "text_path": "api_v1_production"
+                }
+            }
+        },
+        "/api/v1/production/inverters": {
+            "default": {
+                "request": {},
+                "response": {
+                    "status_code": 200,
+                    "headers": {
+                        "content-type": "application/json"
+                    },
+                    "text_path": "api_v1_production_inverters"
+                }
+            }
+        },
+        "/info": {
+            "default": {
+                "request": {},
+                "response": {
+                    "status_code": 200,
+                    "headers": {
+                        "content-type": "text/xml"
+                    },
+                    "text_path": "info"
+                }
+            }
+        },
+        "/ivp/ensemble/dry_contacts": {
+            "default": {
+                "request": {},
+                "response": {
+                    "status_code": 200,
+                    "headers": {},
+                    "text_path": "ivp_ensemble_dry_contacts"
+                }
+            }
+        },
+        "/ivp/ensemble/inventory": {
+            "default": {
+                "request": {},
+                "response": {
+                    "status_code": 200,
+                    "headers": {},
+                    "text_path": "ivp_ensemble_inventory"
+                }
+            }
+        },
+        "/ivp/ensemble/power": {
+            "default": {
+                "request": {},
+                "response": {
+                    "status_code": 200,
+                    "headers": {},
+                    "text_path": "ivp_ensemble_power"
+                }
+            }
+        },
+        "/ivp/ss/dry_contact_settings": {
+            "default": {
+                "request": {},
+                "response": {
+                    "status_code": 200,
+                    "headers": {},
+                    "text_path": "ivp_ss_dry_contact_settings"
+                }
+            }
+        },
+        "/production": {
+            "default": {
+                "request": {},
+                "response": {
+                    "status_code": 200,
+                    "headers": {
+                        "content-type": "application/json"
+                    },
+                    "text_path": "production"
+                }
+            }
+        },
+        "/production.json": {
+            "default": {
+                "request": {},
+                "response": {
+                    "status_code": 200,
+                    "headers": {
+                        "content-type": "application/json"
+                    },
+                    "text_path": "production.json"
+                }
+            }
+        }
+    }
+}

@@ -14,7 +14,7 @@ from custom_components.enphase_gateway.enreader import GatewayReader
 
 async def get_mock_enreader(self, update: bool = True, token: str | None = None):
     """Return a mock gateway reader."""
-    enreader = GatewayReader("127.0.0.1")
+    enreader = GatewayReader(host="127.0.0.1")
     await enreader.authenticate("username", "password", token)
     if update:
         await enreader.update()
@@ -88,7 +88,7 @@ class GatewayFixture:
         """Set up the response mocks for the given endpoints."""
         for endpoint in endpoints:
             self.mock(endpoint)
-            
+
     def mock(self, endpoint: str, behaviour: str = "default"):
         """Mock the endpoint."""
         endpoint_data = self.meta["endpoints"][endpoint][behaviour]

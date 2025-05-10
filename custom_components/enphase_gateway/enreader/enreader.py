@@ -77,6 +77,13 @@ class GatewayReader:
 
         self.auth = None
         self.gateway = None
+
+        if async_client_verify_ssl is None:
+            async_client_verify_ssl = httpx.AsyncClient(verify=True)
+
+        if async_client_no_verify_ssl is None:
+            async_client_no_verify_ssl = httpx.AsyncClient(verify=False)
+
         self._async_client_verify_ssl = async_client_verify_ssl
         self._async_client_no_verify_ssl = async_client_no_verify_ssl
 

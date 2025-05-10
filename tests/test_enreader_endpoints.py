@@ -36,9 +36,9 @@ async def test_with_3_7_0_firmware() -> None:
 
     enreader = GatewayReader(host="127.0.0.1")
     enreader.auth = LegacyAuth(
-        enreader.host,
-        "username",
-        "password",
+        host=enreader.host,
+        username="username",
+        password="password",
     )
 
     # Get the endpoints required for probing

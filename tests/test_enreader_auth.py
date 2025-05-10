@@ -58,6 +58,7 @@ async def test_auth_process(version: str, auth_class, gateway_class) -> None:
     """Test the authentication process."""
     fixture = GatewayFixture(version)
     fixture.mock_info_endpoint()
+    fixture.mock_auth_endpoints(mock_enlighten=True)
 
     enreader = GatewayReader(host="127.0.0.1")
 

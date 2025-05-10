@@ -34,7 +34,7 @@ async def test_with_3_7_0_firmware() -> None:
     fixture.mock_info_endpoint()
     fixture.mock_auth_endpoints(mock_enlighten=False)
 
-    enreader = GatewayReader("127.0.0.1")
+    enreader = GatewayReader(host="127.0.0.1")
     enreader.auth = LegacyAuth(
         enreader.host,
         "username",
@@ -80,9 +80,9 @@ async def test_with_3_7_0_firmware() -> None:
 
 #     """
 #     fixture = GatewayFixture("3.7.0")
-    
+
 #     enreader = GatewayReader("127.0.0.1")
-    
+
 #     fixture_name = "3.7.0_envoy_r"
 #     gateway_class = "EnvoyLegacy"
 

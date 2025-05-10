@@ -24,8 +24,9 @@ async def async_setup_entry(
 ) -> bool:
     """Set up the Enphase Gateway component."""
     reader = GatewayReader(
-        entry.data[CONF_HOST],
-        get_async_client(hass, verify_ssl=False),
+        host=entry.data[CONF_HOST],
+        async_client_verify_ssl=get_async_client(hass, verify_ssl=True),
+        async_client_no_verify_ssl=get_async_client(hass, verify_ssl=False),
     )
     coordinator = GatewayUpdateCoordinator(hass, entry, reader)
 

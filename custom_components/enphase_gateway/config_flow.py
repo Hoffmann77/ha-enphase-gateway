@@ -43,8 +43,9 @@ async def validate_input(
 ) -> GatewayReader:
     """Validate that the user input allows us to connect."""
     gateway_reader = GatewayReader(
-        host,
-        get_async_client(hass, verify_ssl=False)
+        host=host,
+        async_client_verify_ssl=get_async_client(hass, verify_ssl=True),
+        async_client_no_verify_ssl=get_async_client(hass, verify_ssl=False),
     )
     # await gateway_reader.prepare()
     await gateway_reader.authenticate(username=username, password=password)

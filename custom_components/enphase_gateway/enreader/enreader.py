@@ -49,11 +49,10 @@ class GatewayReader:
 
     def __init__(
             self,
+            *,
             host: str,
-            async_client: httpx.AsyncClient | None = None,
-            # For the future:
-            # client_verify_ssl: httpx.AsyncClient,
-            # client_no_verify_ssl: httpx.AsyncClient,
+            async_client_verify_ssl: httpx.AsyncClient | None = None,
+            async_client_no_verify_ssl: httpx.AsyncClient | None = None,
     ) -> None:
         """Initialize instance of Enreader.
 
@@ -78,13 +77,10 @@ class GatewayReader:
 
         self.auth = None
         self.gateway = None
-        self._async_client = async_client or self._get_async_client()
-        # For the future:
-        # self._client_verify_ssl = client_verify_ssl
-        # self._client_no_verify_ssl = client_no_verify_ssl
-        self._info = GatewayInfo(self.host, self._async_client)
+        self._async_client_verify_ssl = async_client_verify_ssl
+        self._async_client_no_verify_ssl = async_client_no_verify_ssl
 
-
+        self._info = GatewayInfo(self.host, self._async_client_no_verify_ssl)
 
     @property
     def name(self) -> str | None:
@@ -175,7 +171,9 @@ class GatewayReader:
             # Firmware using token based authentication.
             if token or (username and password):
                 auth = EnphaseTokenAuth(
-                    self.host,
+                    host=self.host,
+                    async_client_verify_ssl=self._async_client_verify_ssl,
+                    async_client_no_verify_ssl=self._async_client_no_verify_ssl,
                     enlighten_username=username,
                     enlighten_password=password,
                     serial_number=info.serial_number,
@@ -195,7 +193,11 @@ class GatewayReader:
                 password = info.serial_number[:6]
 
             if username and password:
-                auth = LegacyAuth(self.host, username, password)
+                auth = LegacyAuth(
+                    host=self.host,
+                    username=username,
+                    password=password,
+                )
 
 
 
@@ -209,7 +211,7 @@ class GatewayReader:
             )
 
         # Update the authentication method to check if configured correctly.
-        await auth.setup(self._async_client)
+        await auth.setup()
 
         return auth
 
@@ -247,14 +249,14 @@ class GatewayReader:
             response = await async_request(
                 "GET",
                 f"{self.auth.protocol}://{self.host}{endpoint}",
-                self._async_client,
+                self._async_client_no_verify_ssl,
                 headers={**DEFAULT_HEADERS, **headers},
                 cookies=self.auth.cookies,
                 auth=self.auth.auth,
             )
         except httpx.HTTPStatusError as err:
             if response.status_code == 401 and handle_401:
-                self.auth.resolve_401(self._async_client)
+                self.auth.resolve_401()
                 return await self._request(endpoint, handle_401=False)
             else:
                 raise err
@@ -264,7 +266,7 @@ class GatewayReader:
     async def _async_get(self, url: str, **kwargs):
         """Send a simple HTTP get request."""
 
-        return await async_get(url, self._async_client, **kwargs)
+        return await async_get(url, self._async_client_no_verify_ssl, **kwargs)
 
 
 

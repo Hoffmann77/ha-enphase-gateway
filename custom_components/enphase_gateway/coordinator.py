@@ -58,10 +58,10 @@ class GatewayUpdateCoordinator(DataUpdateCoordinator):
             self,
             hass: HomeAssistant,
             entry: ConfigEntry,
-            enreader: GatewayReader,
+            gateway_reader: GatewayReader,
     ) -> None:
         """Initialize DataUpdateCoordinator for the gateway."""
-        self.gateway_reader = enreader
+        self.gateway_reader = gateway_reader
         self.config_entry = entry
         self._setup_complete = False
         self._cancel_token_refresh: CALLBACK_TYPE | None = None
@@ -155,6 +155,7 @@ class GatewayUpdateCoordinator(DataUpdateCoordinator):
             Return the Enphase token if available. Otherwise return `None`.
 
         """
+        _LOGGER.debug(f"{self.name}: Loading cached token...")
         await self._async_sync_store(load=True)
         return self._store_data.get("token")
 

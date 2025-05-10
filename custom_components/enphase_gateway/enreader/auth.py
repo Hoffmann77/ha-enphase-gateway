@@ -30,8 +30,9 @@ BASE_DIR = Path(__file__).resolve().parent
 class GatewayAuth(ABC):
     """Abstract base class for gateway authentication."""
 
-    def __init__(self) -> None:
+    def __init__(self, host: str) -> None:
         """Initialize GatewayAuth."""
+        self.host = host
 
     @abstractproperty
     def protocol(self) -> str:
@@ -57,15 +58,15 @@ class GatewayAuth(ABC):
     def to_redact(self) -> list[tuple[str, str]]:
         """Return a list of tuples containing strings to redact."""
 
-    async def setup(self, client: httpx.AsyncClient) -> None:
+    async def setup(self, *args, **kwargs) -> None:
         """Set up the authentication method."""
         pass
 
-    async def refresh(self, client: httpx.AsyncClient) -> None:
+    async def refresh(self, *args, **kwargs) -> None:
         """Refresh the authentication method."""
         pass
 
-    async def resolve_401(self, async_client: httpx.AsyncClient) -> None:
+    async def resolve_401(self, *args, **kwargs) -> None:
         """Handle a HTTP 401 Unauthorized response."""
         pass
 
@@ -73,8 +74,9 @@ class GatewayAuth(ABC):
 class LegacyAuth(GatewayAuth):
     """Class for legacy authentication using username and password."""
 
-    def __init__(self, host: str, username: str, password: str) -> None:
-        self._host = host
+    def __init__(self, *, host: str, username: str, password: str) -> None:
+        """Initialize Legacy authentication."""
+        super().__init__(host)
         self._username = username
         self._password = password
 
@@ -110,7 +112,7 @@ class LegacyAuth(GatewayAuth):
     def to_redact(self) -> list[tuple[str, str]]:
         """Return a list of tuples containing strings to redact."""
         return [
-            (self._host, "<<host>>"),
+            (self.host, "<<host>>"),
             (self._username, "<<username>>"),
             (self._password, "<<password>>"),
         ]
@@ -163,7 +165,10 @@ class EnphaseTokenAuth(GatewayAuth):
 
     def __init__(
             self,
+            *,
             host: str,
+            async_client_verify_ssl,
+            async_client_no_verify_ssl,
             enlighten_username: str | None = None,
             enlighten_password: str | None = None,
             serial_number: str | None = None,
@@ -190,7 +195,9 @@ class EnphaseTokenAuth(GatewayAuth):
             DESCRIPTION.
 
         """
-        self._host = host
+        super().__init__(host)
+        self._async_client_verify_ssl = async_client_verify_ssl
+        self._async_client_no_verify_ssl = async_client_no_verify_ssl
         self._enlighten_username = enlighten_username
         self._enlighten_password = enlighten_password
         self._serial_number = serial_number
@@ -237,7 +244,7 @@ class EnphaseTokenAuth(GatewayAuth):
     def token(self, token: str) -> None:
         """Set the Enphase token."""
         if token is None:
-            pass
+            return
 
         decoded = self._decode_token(token)
 
@@ -265,7 +272,7 @@ class EnphaseTokenAuth(GatewayAuth):
     @property
     def to_redact(self) -> list[tuple[str, str]]:
         """Return a list of tuples containing strings to redact."""
-        to_redact = [(self._host, "<<host>>")]
+        to_redact = [(self.host, "<<host>>")]
 
         if self._enlighten_username:
             to_redact.append(
@@ -285,7 +292,7 @@ class EnphaseTokenAuth(GatewayAuth):
         #     for cookie
         #     to_redact.append()
 
-    async def setup(self, async_client: httpx.AsyncClient) -> None:
+    async def setup(self) -> None:
         """Set up the token based authentication.
 
         Parameters
@@ -308,9 +315,9 @@ class EnphaseTokenAuth(GatewayAuth):
                 "Could not obtain a token for token authentication"
             )
 
-        await self._refresh_cookies(async_client)
+        await self._refresh_cookies()
 
-    async def refresh(self, async_client: httpx.AsyncClient) -> None:
+    async def refresh(self) -> None:
         """Refresh the token based authentication.
 
         Parameters
@@ -320,9 +327,9 @@ class EnphaseTokenAuth(GatewayAuth):
 
         """
         await self._refresh_token()
-        await self._refresh_cookies(async_client)
+        await self._refresh_cookies()
 
-    async def resolve_401(self, async_client: httpx.AsyncClient) -> bool:
+    async def resolve_401(self) -> bool:
         """Resolve 401 Unauthorized response.
 
         Parameters
@@ -337,7 +344,7 @@ class EnphaseTokenAuth(GatewayAuth):
 
         """
         try:
-            self._refresh_cookies(async_client)
+            self._refresh_cookies()
         except httpx.TransportError as err:
             raise GatewayCommunicationError(
                 "Error trying to refresh token cookies: {err}",
@@ -346,7 +353,7 @@ class EnphaseTokenAuth(GatewayAuth):
         except InvalidTokenError:
             self._token = None
             self._cookies = None
-            self.update(async_client)
+            self.update()
 
     async def _refresh_token(self) -> None:
         """Refresh the Enphase token.
@@ -374,7 +381,7 @@ class EnphaseTokenAuth(GatewayAuth):
 
             # _LOGGER.debug(f"New token valid until: {self._token_exp_date}")
 
-    async def _refresh_cookies(self, async_client: httpx.AsyncClient) -> None:
+    async def _refresh_cookies(self) -> None:
         """Try to refresh the cookies.
 
         Parameters
@@ -385,7 +392,7 @@ class EnphaseTokenAuth(GatewayAuth):
         """
         _LOGGER.debug("Refreshing the cookies")
 
-        cookies = await self._check_jwt(async_client, self.token)
+        cookies = await self._check_jwt(self.token)
         if cookies is not None:
             self._cookies = cookies
 
@@ -413,42 +420,36 @@ class EnphaseTokenAuth(GatewayAuth):
         if not self._serial_number:
             pass
 
-        async with httpx.AsyncClient(verify=True) as async_client:
-            # Login to Enlighten to obtain a session ID.
-            response = await self._async_post_enlighten(
-                self.LOGIN_URL,
-                async_client,
-                data={
-                    "user[email]": self._enlighten_username,
-                    "user[password]": self._enlighten_password,
-                }
-            )
+        # Login to Enlighten to obtain a session ID.
+        response = await self._async_post_enlighten(
+            self.LOGIN_URL,
+            data={
+                "user[email]": self._enlighten_username,
+                "user[password]": self._enlighten_password,
+            }
+        )
 
-            enlighten_data = orjson.loads(response.text)
-            # self._is_consumer = response_data["is_consumer"]
-            # self._manager_token = response_data["manager_token"]
+        enlighten_data = orjson.loads(response.text)
+        # self._is_consumer = response_data["is_consumer"]
+        # self._manager_token = response_data["manager_token"]
 
-            # Use the session ID to retrieve a new token.
-            response = await self._async_post_enlighten(
-                self.TOKEN_URL,
-                async_client,
-                json={
-                    "session_id": enlighten_data["session_id"],
-                    "serial_num": self._serial_number,
-                    "username": self._enlighten_username
-                }
-            )
-            _LOGGER.debug("Retrieved a new token from Enlighten.")
+        # Use the session ID to retrieve a new token.
+        response = await self._async_post_enlighten(
+            self.TOKEN_URL,
+            json={
+                "session_id": enlighten_data["session_id"],
+                "serial_num": self._serial_number,
+                "username": self._enlighten_username
+            }
+        )
+        _LOGGER.debug("Retrieved a new token from Enlighten.")
 
-            return response.text
+        return response.text
 
     async def _async_post_enlighten(
-            self,
-            url: str,
-            client: httpx.AsyncClient,
-            **kwargs: dict,
+        self, url: str, **kwargs: dict
     ) -> httpx.Response:
-        """Send a HTTP POST request to the Enlighten platform.
+        """Send a HTTPS POST request to the Enlighten platform.
 
         Parameters
         ----------
@@ -473,7 +474,9 @@ class EnphaseTokenAuth(GatewayAuth):
 
         """
         try:
-            response = await async_post(url, client, **kwargs)
+            response = await async_post(
+                url, self._async_client_verify_ssl, **kwargs
+            )
         except httpx.TransportError as err:
             raise EnlightenCommunicationError(
                 "Error communicating with the Enlighten platform",
@@ -489,12 +492,7 @@ class EnphaseTokenAuth(GatewayAuth):
         else:
             return response
 
-
-    async def _check_jwt(
-            self,
-            async_client: httpx.AsyncClient,
-            token: str,
-    ) -> str | None:
+    async def _check_jwt(self, token: str) -> str | None:
         """Check if the Enphase JWT token is valid.
 
         Call the auth/check_jwt endpoint to validate the token.
@@ -534,10 +532,11 @@ class EnphaseTokenAuth(GatewayAuth):
                 f"The provided token is empty: '{token[:9]}...'"
             )
 
+        _LOGGER.debug(f"host: {self.host}")
         try:
             resp = await async_get(
-                f"https://{self._host}/auth/check_jwt",
-                async_client,
+                f"https://{self.host}/auth/check_jwt",
+                self._async_client_no_verify_ssl,
                 headers={"Authorization": f"Bearer {token}"},
             )
         except httpx.HTTPStatusError as err:

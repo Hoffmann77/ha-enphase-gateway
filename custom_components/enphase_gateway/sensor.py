@@ -31,8 +31,8 @@ from homeassistant.const import (
 from .const import DOMAIN, CONF_INVERTERS, CONF_ENCHARGE_ENTITIES
 from .entity import GatewayCoordinatorEntity
 from .coordinator import GatewayUpdateCoordinator
-from .gateway_reader.gateway import BaseGateway
-from .gateway_reader.models import (
+from .enreader.gateway import EnphaseGateway
+from .enreader.models import (
     EnsemblePower,
     EnsembleInventory,
     ACBatteryStorage,
@@ -54,8 +54,8 @@ def check(val):
 class GatewaySensorEntityDescription(SensorEntityDescription):
     """Provide a description of an inverter sensor."""
 
-    value_fn: Callable[[BaseGateway], float | None]
-    exists_fn: Callable[[BaseGateway], bool] = lambda _: True
+    value_fn: Callable[[EnphaseGateway], float | None]
+    exists_fn: Callable[[EnphaseGateway], bool] = lambda _: True
 
 
 PRODUCTION_SENSORS = (

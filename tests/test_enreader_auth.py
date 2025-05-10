@@ -44,7 +44,7 @@ async def test_missing_auth() -> None:
 
 
 @pytest.mark.parametrize(
-    "version, gateway_class",
+    "version, auth_class, gateway_class",
     [
          ("3.7.0", LegacyAuth, EnvoyLegacy),
          ("3.9.36", LegacyAuth, Envoy),

@@ -64,6 +64,7 @@ class PropertyDescriptor(BaseDescriptor):
             return self
         if self.fget is None:
             raise AttributeError(f"property '{self._name}' has no getter")
+        
         return self.fget(obj)
 
 

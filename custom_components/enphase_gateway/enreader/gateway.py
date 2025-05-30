@@ -290,7 +290,7 @@ class EnphaseGateway:
     async def update(self, _request) -> None:
         """Update the gateway's data."""
         for endpoint in self.required_endpoints:
-            if not endpoint.needs_update:
+            if not endpoint.cache_expired:
                 continue
 
             self.data[endpoint.path] = await endpoint.fetch(_request)

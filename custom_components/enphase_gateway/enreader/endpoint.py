@@ -28,16 +28,16 @@ class GatewayEndpoint:
         """
         self.path = path
         self.cache_for = cache_for
-        self._timestamp = 0
+        self.last_update = 0
 
     def __repr__(self) -> str:
         """Return a printable representation."""
         return f"Endpoint('{self.path}')"
 
     @property
-    def needs_update(self) -> bool:
+    def cache_expired(self) -> bool:
         """Return if the cache is expired."""
-        if (self._timestamp + self.cache_for) < time.time():
+        if (self.last_update + self.cache_for) < time.time():
             return True
 
         return False
@@ -46,12 +46,12 @@ class GatewayEndpoint:
         """Fetch the endpoint and return the decoded data."""
         response = await request(self.path)
         decoded = self._decode_response(response)
-        self._timestamp = time.time()
+        self.last_update = time.time()
 
         return decoded
 
     def _decode_response(self, response):
-        """Decode the response content."""
+        """Decode the content of the response."""
         content_type = response.headers.get("content-type", "application/json")
 
         if "application/json" in content_type:

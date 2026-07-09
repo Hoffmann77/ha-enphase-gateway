@@ -24,7 +24,7 @@ from .const import (
     FIXTURE_COLLECTION_ENDPOINTS,
 )
 
-from .coordinator import EnphaseConfigEntry
+from .coordinator import EnphaseGatewayConfigEntry
 from .enreader import GatewayReader
 
 CONF_TITLE = "title"
@@ -66,26 +66,10 @@ async def _get_fixtures(enreader: GatewayReader) -> dict[str, Any]:
             }
         }
 
-        # request_data = {
-        #     "url": str(response.request.url),
-        #     "method": response.request.method,
-        #     "headers": dict(response.request.headers.items()),
-        # }
-
-        # response_data = {
-        #     "url": str(response.url),
-        #     "status_code": response.status_code,
-        #     "reason_phrase": response.reason_phrase,
-        #     "is_redirect": response.is_redirect,
-        #     "encoding": response.encoding,
-        #     "headers": dict(response.headers.items()),
-        #     "cookies": dict(response.cookies.items()),
-        # }
-
         # Redact sensitive data from the metadata.
         redacted = json_dumps(data)
         for to_replace, placeholder in to_redact:
-            redacted.replace(to_replace, placeholder)
+            redacted = redacted.replace(to_replace, placeholder)
 
         redacted_data = json_loads(redacted)
 
@@ -96,7 +80,9 @@ async def _get_fixtures(enreader: GatewayReader) -> dict[str, Any]:
         )
 
         # Redact the serial number from the response text.
-        response_text.replace(enreader.serial_number, CLEAN_SERIAL)
+        response_text = response_text.replace(
+            enreader.serial_number, CLEAN_SERIAL
+        )
 
         redacted_data["response"]["text"] = response_text
         fixtures[endpoint] = {"default": redacted_data}
@@ -105,14 +91,14 @@ async def _get_fixtures(enreader: GatewayReader) -> dict[str, Any]:
 
 
 async def async_get_config_entry_diagnostics(
-    hass: HomeAssistant, entry: EnphaseConfigEntry
+    hass: HomeAssistant, entry: EnphaseGatewayConfigEntry
 ) -> dict[str, Any]:
     """Return diagnostics for a config entry."""
     coordinator = entry.runtime_data
 
     # Make sure the integration is ready to provide useful diagnostics.
     if TYPE_CHECKING:
-        assert coordinator.gateway.initial_update_finished
+        assert coordinator.gateway_reader.gateway.initial_update_finished
 
     # Get the reader instance
     enreader = coordinator.gateway_reader

@@ -8,10 +8,10 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.components import zeroconf
+from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.selector import selector
+from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 from homeassistant.helpers.httpx_client import get_async_client
 from homeassistant.const import (
     CONF_HOST,
@@ -25,7 +25,6 @@ from .exceptions import CannotConnect
 from .const import (
     DOMAIN, CONF_SERIAL_NUM, CONF_CACHE_TOKEN, CONF_USE_LEGACY_NAME,
     CONF_ENCHARGE_ENTITIES, CONFIG_FLOW_USER_ERROR, CONF_INVERTERS,
-    ALLOWED_ENDPOINTS, CONF_DATA_UPDATE_INTERVAL
 )
 
 
@@ -47,7 +46,6 @@ async def validate_input(
         async_client_verify_ssl=get_async_client(hass, verify_ssl=True),
         async_client_no_verify_ssl=get_async_client(hass, verify_ssl=False),
     )
-    # await gateway_reader.prepare()
     await gateway_reader.authenticate(username=username, password=password)
     await gateway_reader.update()
     return gateway_reader
@@ -70,8 +68,8 @@ class GatewayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_zeroconf(
             self,
-            discovery_info: zeroconf.ZeroconfServiceInfo,
-    ) -> FlowResult:
+            discovery_info: ZeroconfServiceInfo,
+    ) -> ConfigFlowResult:
         """Handle a config flow initialized by zeroconf discovery.
 
         Update the IP adress of discovered devices unless the system
@@ -79,7 +77,7 @@ class GatewayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         Parameters
         ----------
-        discovery_info : zeroconf.ZeroconfServiceInfo
+        discovery_info : ZeroconfServiceInfo
             Home Assistant zeroconf discovery information.
 
         Returns
@@ -107,7 +105,7 @@ class GatewayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # set unique_id if not set for an entry with the same IP adress
         for entry in self._async_current_entries(include_ignore=False):
-            if not entry.unique_id and entry.data.get(CONF_HOST) == self.ip_adress:
+            if not entry.unique_id and entry.data.get(CONF_HOST) == self.ip_address:
                 #  update title with serial_num if title was not changed
                 if entry.title in {DEFAULT_TITLE, LEGACY_TITLE}:
                     title = f"{entry.title} {serial_num}"
@@ -126,7 +124,7 @@ class GatewayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(
             self,
             user_input: dict[str, Any] | None = None,
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle the user step.
 
         Parameters
@@ -215,7 +213,7 @@ class GatewayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_config(
             self,
             user_input: dict[str, Any] | None = None,
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle the configuration step.
 
         Parameters
@@ -251,30 +249,16 @@ class GatewayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_reauth(
             self,
-            user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Handle reauth.
+            entry_data: dict[str, Any],
+    ) -> ConfigFlowResult:
+        """Handle reauth upon an authentication error."""
+        self._reauth_entry = self._get_reauth_entry()
 
-        Parameters
-        ----------
-        user_input : dict[str, Any] | None, optional
-            Form user input. The default is None.
-
-        Returns
-        -------
-        FlowResult
-            Config flow result.
-
-        """
-        self._reauth_entry = self.hass.config_entries.async_get_entry(
-            self.context["entry_id"]
-        )
-
-        if self._reauth_entry is not None:
-            if unique_id := self._reauth_entry.unique_id:
-                await self.async_set_unique_id(
-                    unique_id,
-                    raise_on_progress=False
-                )
+        if unique_id := self._reauth_entry.unique_id:
+            await self.async_set_unique_id(
+                unique_id,
+                raise_on_progress=False,
+            )
 
         return await self.async_step_user()
 
@@ -309,7 +293,7 @@ class GatewayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ),
         }
 
-        if self._gateway_reader.gateway.encharge_inventory:
+        if self._gateway_reader.gateway.ensemble_inventory:
             schema.update(
                 {vol.Optional(CONF_ENCHARGE_ENTITIES, default=True): bool}
             )
@@ -331,37 +315,21 @@ class GatewayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return f"{name} {self.unique_id}"
         return name
 
-    # async def _async_set_unique_id_from_gateway(
-    #         self,
-    #         gateway_reader: GatewayReader) -> bool:
-    #     """Set the unique id by fetching it from the gateway."""
-    #     serial_num = None
-    #     with contextlib.suppress(httpx.HTTPError):
-    #         serial_num = await gateway_reader.get_serial_number()
-    #     if serial_num:
-    #         await self.async_set_unique_id(serial_num)
-    #         return True
-    #     return False
-
     @staticmethod
     @callback
     def async_get_options_flow(
             config_entry: config_entries.ConfigEntry
     ) -> config_entries.OptionsFlow:
         """Create the options flow."""
-        return GatewayOptionsFlow(config_entry)
+        return GatewayOptionsFlow()
 
 
 class GatewayOptionsFlow(config_entries.OptionsFlow):
     """Handle a options flow for Enphase Gateway."""
 
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
-
     async def async_step_init(
             self,
-            user_input: dict[str, Any] | None = None) -> FlowResult:
+            user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Manage the options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)

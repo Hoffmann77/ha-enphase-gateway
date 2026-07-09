@@ -3,7 +3,7 @@
 import logging
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 
 import jwt
 import httpx
@@ -34,27 +34,33 @@ class GatewayAuth(ABC):
         """Initialize GatewayAuth."""
         self.host = host
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def protocol(self) -> str:
         """Return the http protocol."""
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def auth(self) -> httpx.Auth | None:
         """Return the httpx auth object."""
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def headers(self) -> dict[str, str]:
         """Return the auth headers."""
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def cookies(self) -> dict[str, str]:
         """Return the cookies."""
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def is_stale(self) -> bool:
         """Return if a refresh of authentication medthod is necessary."""
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def to_redact(self) -> list[tuple[str, str]]:
         """Return a list of tuples containing strings to redact."""
 
@@ -344,16 +350,19 @@ class EnphaseTokenAuth(GatewayAuth):
 
         """
         try:
-            self._refresh_cookies()
+            await self._refresh_cookies()
         except httpx.TransportError as err:
             raise GatewayCommunicationError(
                 "Error trying to refresh token cookies: {err}",
                 request=err.request,
             ) from err
         except InvalidTokenError:
+            # The cached token is no longer valid. Drop it and fetch a new
+            # one from Enlighten on the next request.
             self._token = None
             self._cookies = None
-            self.update()
+            await self._refresh_token()
+            await self._refresh_cookies()
 
     async def _refresh_token(self) -> None:
         """Refresh the Enphase token.
@@ -415,10 +424,15 @@ class EnphaseTokenAuth(GatewayAuth):
         _LOGGER.debug("Retrieving a new token from Enlighten...")
 
         if not (self._enlighten_username and self._enlighten_password):
-            pass
+            raise EnlightenAuthenticationError(
+                "Enlighten username and password are required to retrieve "
+                "a new token."
+            )
 
         if not self._serial_number:
-            pass
+            raise GatewayAuthenticationError(
+                "The gateway serial number is required to retrieve a token."
+            )
 
         # Login to Enlighten to obtain a session ID.
         response = await self._async_post_enlighten(
@@ -540,10 +554,11 @@ class EnphaseTokenAuth(GatewayAuth):
                 headers={"Authorization": f"Bearer {token}"},
             )
         except httpx.HTTPStatusError as err:
-            if resp.status_code == 401:
+            if err.response.status_code == 401:
                 raise InvalidTokenError(
                     f"The provided token is not valid: '{token[:9]}...'"
                 ) from err
+            raise
         except httpx.TransportError as err:
             raise GatewayCommunicationError(
                 "Error trying to validate token: {err}",

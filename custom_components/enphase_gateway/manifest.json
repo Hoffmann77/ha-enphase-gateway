@@ -8,7 +8,13 @@
   "integration_type": "hub",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/Hoffmann77/home_assistant_enphase_gateway/issues",
-  "requirements": ["envoy-utils", "xmltodict", "httpx", "jsonpath-ng"],
+  "loggers": ["custom_components.enphase_gateway"],
+  "requirements": [
+    "beautifulsoup4==4.15.0",
+    "envoy-utils==0.0.1",
+    "jsonpath-ng==1.8.0",
+    "lxml==6.1.1"
+  ],
   "version": "1.2.0",
   "zeroconf": [
     {

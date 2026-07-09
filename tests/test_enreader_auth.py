@@ -34,10 +34,11 @@ from custom_components.enphase_gateway.enreader.exceptions import (
 _LOGGER = logging.getLogger(__name__)
 
 
+@pytest.mark.asyncio
 @respx.mock
 async def test_missing_auth() -> None:
     """Test `authenticate()` gets called before `update()`."""
-    enreader = GatewayReader("127.0.0.1")
+    enreader = GatewayReader(host="127.0.0.1")
 
     with pytest.raises(GatewayAuthenticationRequired):
         await enreader.update()

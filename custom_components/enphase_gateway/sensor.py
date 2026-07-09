@@ -10,9 +10,10 @@ from datetime import datetime
 from operator import attrgetter
 
 from homeassistant.core import HomeAssistant
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity import Entity, DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import (
+    AddConfigEntryEntitiesCallback,
+)
 from homeassistant.util import dt as dt_util
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -30,7 +31,10 @@ from homeassistant.const import (
 
 from .const import DOMAIN, CONF_INVERTERS, CONF_ENCHARGE_ENTITIES
 from .entity import GatewayCoordinatorEntity
-from .coordinator import GatewayUpdateCoordinator
+from .coordinator import (
+    GatewayUpdateCoordinator,
+    EnphaseGatewayConfigEntry,
+)
 from .enreader.gateway import EnphaseGateway
 from .enreader.models import (
     EnsemblePower,
@@ -497,12 +501,11 @@ ENSEMBLE_AGG_POWER_SENSORS = (
 
 async def async_setup_entry(
         hass: HomeAssistant,
-        config_entry: ConfigEntry,
-        async_add_entities: AddEntitiesCallback
+        config_entry: EnphaseGatewayConfigEntry,
+        async_add_entities: AddConfigEntryEntitiesCallback
 ) -> None:
     """Set up envoy sensor platform."""
     coordinator = config_entry.runtime_data
-    # coordinator = hass.data[DOMAIN][config_entry.entry_id]
     options = config_entry.options
     conf_inverters = options.get(CONF_INVERTERS, False)
     conf_encharge_entity = options.get(CONF_ENCHARGE_ENTITIES, False)
@@ -652,7 +655,7 @@ class InverterEntity(GatewaySensorEntity):
     @property
     def native_value(self):
         """Return the state of the sensor."""
-        inverters = self.data.get("inverters")
+        inverters = self.data.inverters
         assert inverters is not None
         if self._serial_number not in inverters:
             _LOGGER.debug(

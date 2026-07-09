@@ -5,7 +5,7 @@ import logging
 from textwrap import dedent
 from types import GenericAlias
 
-from jsonpath_ng.ext import parse, filter # noqa
+from jsonpath_ng.ext import parse
 
 from .endpoint import GatewayEndpoint
 
@@ -113,7 +113,6 @@ class CachedPropertyDescriptor:
     __class_getitem__ = classmethod(GenericAlias)
 
 
-
 class ResponseDescriptor(BaseDescriptor):
     """Descriptor returning the raw response."""
 
@@ -143,25 +142,6 @@ class JsonDescriptor(BaseDescriptor):
             data = obj.data or {}
         return self.resolve(self.jsonpath_expr, data)
 
-    # @classmethod
-    # def resolve_old(cls, path: str, data: dict, default: str | int | float = None):
-    #     """Classmethod to resolve a given JsonPath."""
-    #     _LOGGER.debug(f"Resolving jsonpath: {path} using data: {data}")
-    #     if path == "":
-    #         return data
-    #     result = jsonpath(data, dedent(path))
-    #     if result is False:
-    #         _LOGGER.debug(
-    #             f"The configured jsonpath: {path}, did not return anything!"
-    #         )
-    #         return default
-
-    #     if isinstance(result, list) and len(result) == 1:
-    #         result = result[0]
-
-    #     _LOGGER.debug(f"The configured jsonpath: {path}, did return {result}")
-    #     return result
-
     @classmethod
     def resolve(cls, path: str, data: dict, default: str | int | float = None):
         """Classmethod to resolve a given jsonpath using jsonpath-ng."""
@@ -181,36 +161,6 @@ class JsonDescriptor(BaseDescriptor):
             result = result[0]
 
         return result
-
-
-class ModelDescriptor(BaseDescriptor):
-
-    def __init__(
-            self,
-            model_cls,
-            jsonpath_expr: str,
-            required_endpoint: str | None = None,
-            cache: int = 0,
-    ) -> None:
-        super().__init__(required_endpoint, cache)
-        self.model_cls = model_cls
-        self.jsonpath_expr = jsonpath_expr
-
-    def __get__(self, obj, objtype=None):
-        """Magic method. Resolve the jasonpath expression."""
-        if self._required_endpoint:
-            data = obj.data.get(self._required_endpoint, {})
-        else:
-            data = obj.data or {}
-
-        return self.resolve(self.jsonpath_expr, data)
-
-    def resolve(cls, jsonpath_expr, model_cls, data):
-
-        result = JsonDescriptor.resolve(jsonpath_expr, data)
-        if result is not None:
-            return model_cls.from_result(result)
-
 
 
 class RegexDescriptor(BaseDescriptor):

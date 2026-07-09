@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.entity import EntityDescription
 
 from .coordinator import GatewayUpdateCoordinator
+
+if TYPE_CHECKING:
+    from .enreader.gateway import EnphaseGateway
 
 
 class GatewayCoordinatorEntity(CoordinatorEntity[GatewayUpdateCoordinator]):
@@ -24,6 +29,6 @@ class GatewayCoordinatorEntity(CoordinatorEntity[GatewayUpdateCoordinator]):
         self.gateway_serial_num = coordinator.gateway_reader.serial_number
 
     @property
-    def data(self) -> dict:
+    def data(self) -> EnphaseGateway:
         """Return the gateway data."""
         return self.coordinator.data

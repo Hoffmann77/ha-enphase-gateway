@@ -7,13 +7,6 @@ class GatewayError(Exception):
     """Base Exception for errors related to the Enphase gateway."""
 
 
-
-
-
-
-
-
-
 # Authentication errors --------------------------------------------------->
 
 class AuthenticationError(GatewayError):
@@ -33,7 +26,6 @@ class GatewayAuthConfigError(AuthenticationError):
     """Exception raised when unable to authenticate to the Enphase gateway."""
 
 
-
 class AuthenticationConfigurationError(AuthenticationError):
     """Exception raised when authentication hasn't been setup."""
 
@@ -46,7 +38,6 @@ class GatewayAuthenticationError(AuthenticationError):
     """Exception raised when unable to authenticate to the Enphase gateway."""
 
 
-# TODO: check if in use
 class GatewayAuthenticationRequired(AuthenticationError):
     """Exception raised when authentication hasn't been setup."""
 
@@ -80,11 +71,6 @@ class AuthenticationConfigError(GatewayError):
 
     Raised when the provided combination of arguments is not supported.
     """
-
-
-
-
-
 
 
 class TokenRetrievalError(GatewayError):

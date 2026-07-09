@@ -5,7 +5,6 @@ pytest
 pytest-asyncio
 lxml
 orjson
-xmltodict
 envoy-utils
 beautifulsoup4
 jsonpath-ng

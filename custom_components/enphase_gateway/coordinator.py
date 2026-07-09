@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from asyncio import sleep as asyncio_sleep
 
 import httpx
@@ -13,12 +13,10 @@ from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.storage import Store
-import homeassistant.util.dt as dt_util
 from homeassistant.const import (
     CONF_NAME,
     CONF_PASSWORD,
     CONF_USERNAME,
-    CONF_TOKEN,
 )
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
@@ -35,6 +33,7 @@ from .enreader.exceptions import (
 
 if TYPE_CHECKING:
     from .enreader import GatewayReader
+    from .enreader.gateway import EnphaseGateway
 
 
 SCAN_INTERVAL = timedelta(seconds=60)
@@ -43,7 +42,6 @@ STORAGE_KEY = "enphase_gateway"
 STORAGE_VERSION = 1
 
 TOKEN_REFRESH_CHECK_INTERVAL = timedelta(days=1)
-STALE_TOKEN_THRESHOLD = timedelta(days=3).total_seconds()
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -62,7 +60,6 @@ class GatewayUpdateCoordinator(DataUpdateCoordinator):
     ) -> None:
         """Initialize DataUpdateCoordinator for the gateway."""
         self.gateway_reader = gateway_reader
-        self.config_entry = entry
         self._setup_complete = False
         self._cancel_token_refresh: CALLBACK_TYPE | None = None
         self._store = Store(
@@ -75,9 +72,12 @@ class GatewayUpdateCoordinator(DataUpdateCoordinator):
         super().__init__(
             hass,
             _LOGGER,
+            config_entry=entry,
             name=entry.data[CONF_NAME],
             update_interval=SCAN_INTERVAL,
-            # always_update=False, # TODO: Added in ha 2023.9
+            # always_update defaults to True: the coordinator returns the same
+            # gateway object each cycle (its .data dict is mutated in place),
+            # so an == comparison would never detect a change.
         )
 
     async def async_remove_store(self, hass) -> None:
@@ -116,14 +116,14 @@ class GatewayUpdateCoordinator(DataUpdateCoordinator):
         if self.gateway_reader.auth.is_stale:
             self.hass.async_create_background_task(
                 self._async_try_refresh_auth(),
-                "{self.name} auth object refresh"
+                f"{self.name} auth object refresh"
             )
 
     async def _async_try_refresh_auth(self) -> None:
         """Try to refresh the auth object."""
         try:
             await self.gateway_reader.auth.refresh()
-        except:  # EnvoyError as err: # TODO: Error handling
+        except Exception:
             # If we can't refresh the token, we try again later.
             _LOGGER.debug(f"{self.name}: Error refreshing token")
             return
@@ -186,24 +186,8 @@ class GatewayUpdateCoordinator(DataUpdateCoordinator):
             await self._store.async_save(self._store_data)
             self._store_update_pending = False
 
-    # def _async_update_saved_token(self) -> None:
-    #     """Update saved token in config entry."""
-    #     if not isinstance(self.gateway_reader.auth, EnphaseTokenAuth):
-    #         return
-    #     # update token in config entry so we can
-    #     # startup without hitting the Cloud API
-    #     # as long as the token is valid
-    #     _LOGGER.debug(f"{self.name}: Updating token in config entry from auth")
-    #     self.hass.config_entries.async_update_entry(
-    #         self.entry,
-    #         data={
-    #             **self.entry.data,
-    #             CONF_TOKEN: self.gateway_reader.auth.token,
-    #         },
-    #     )
-
-    async def _async_update_data(self) -> dict[str, Any]:
-
+    async def _async_update_data(self) -> EnphaseGateway:
+        """Fetch the latest data from the gateway."""
         gateway_reader = self.gateway_reader
 
         for _try in range(2):
@@ -214,27 +198,25 @@ class GatewayUpdateCoordinator(DataUpdateCoordinator):
                 await gateway_reader.update()
                 return gateway_reader.gateway
 
-            except GatewayAuthenticationError as err:  # TODO: improve
-                # try to refresh cookies or get a new token
-                # can also be done in the get method
+            except GatewayAuthenticationError as err:
                 raise UpdateFailed(
                     f"Gateway authentication error: {err}"
                 ) from err
-                # continue
 
-            except (EnlightenAuthenticationError, GatewayAuthenticationRequired) as err:
-                # token likely expired or firmware changed - re-authenticate
-                # Enlighten credentials are likely to be invalid
+            except (
+                EnlightenAuthenticationError, GatewayAuthenticationRequired,
+            ) as err:
+                # Token likely expired or firmware changed - re-authenticate
+                # once before giving up and triggering a reauth flow.
                 if self._setup_complete and _try == 0:
                     self._setup_complete = False
                     continue
                 raise ConfigEntryAuthFailed from err
 
             except httpx.HTTPError as err:
-                # TODO: does this error occur at local time or utc?
                 now = datetime.now(timezone.utc)
                 if _try == 0 and now.hour == 23 and now.minute == 0:
-                    asyncio_sleep(20)
+                    await asyncio_sleep(20)
                     continue
                 raise UpdateFailed(
                     f"Error communicating with API: {err}"

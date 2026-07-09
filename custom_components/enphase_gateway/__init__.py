@@ -4,16 +4,13 @@ from __future__ import annotations
 
 import logging
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.httpx_client import get_async_client
 
 from .enreader import GatewayReader
 from .coordinator import GatewayUpdateCoordinator, EnphaseGatewayConfigEntry
-from .const import (
-    DOMAIN, PLATFORMS, CONF_ENCHARGE_ENTITIES, CONF_INVERTERS
-)
+from .const import PLATFORMS
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -37,7 +34,7 @@ async def async_setup_entry(
     #
     await coordinator.async_config_entry_first_refresh()
 
-    # TODO: verify this bit of code.
+    # Backfill the unique_id for entries created before it was set.
     if not entry.unique_id:
         hass.config_entries.async_update_entry(
             entry, unique_id=reader.serial_number
@@ -57,17 +54,9 @@ async def async_setup_entry(
 
 async def async_update_listener(
         hass: HomeAssistant, entry: EnphaseGatewayConfigEntry,
-) -> bool:
+) -> None:
     """Reload the config entry when it changed."""
     await hass.config_entries.async_reload(entry.entry_id)
-    # !!! Prototype for deleting inverter entities after an options flow.
-    # registry = entity_registry.async_get(hass)
-    # entities = entity_registry.async_entries_for_config_entry(
-    #     registry, entry.entry_id
-    # )
-    # for entity in entities:
-    #     if entity.inverter_type != entry.options[CONF_INVERTERS]:
-    #         registry.async_remove(entity.entity_id)
 
 
 async def async_unload_entry(
@@ -75,7 +64,8 @@ async def async_unload_entry(
 ) -> bool:
     """Unload a config entry."""
     coordinator: GatewayUpdateCoordinator = entry.runtime_data
-    coordinator._cancel_token_refresh()
+    if coordinator._cancel_token_refresh:
+        coordinator._cancel_token_refresh()
 
     unload = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload:
@@ -85,15 +75,6 @@ async def async_unload_entry(
     return unload
 
 
-# async def async_remove_config_entry_device(
-#         hass: HomeAssistant,
-#         entry: EnphaseGatewayConfigEntry,
-#         device_entry: dr.DeviceEntry,
-# ) -> bool:
-#     """Remove a config entry from a device."""
-#     pass
-
-
 async def async_migrate_entry(
         hass: HomeAssistant, entry: EnphaseGatewayConfigEntry
 ) -> bool:
@@ -101,8 +82,9 @@ async def async_migrate_entry(
     _LOGGER.debug(f"Migrating from version {entry.version}")
 
     if entry.version == 1:
+        # No schema change is required for the v1 -> v2 refactor.
         pass
 
-    _LOGGER.info("Migration to version {entry.version} successful.")
+    _LOGGER.info(f"Migration to version {entry.version} successful.")
 
     return True

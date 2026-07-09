@@ -1,20 +1,17 @@
 """Read parameters from an Enphase(R) gateway on your local network."""
 
 import logging
-from collections.abc import Iterable
 
 import httpx
 from awesomeversion import AwesomeVersion
 from envoy_utils.envoy_utils import EnvoyUtils
 
 from .http import async_get, async_request
-from .endpoint import GatewayEndpoint
 from .utils import is_ipv6_address
 from .gateway import EnphaseGateway, EnvoyLegacy, Envoy, EnvoyS, EnvoySMetered
 from .const import LEGACY_ENVOY_VERSION
-from .gateway_info import GatewayInfo
 from .auth import LegacyAuth, EnphaseTokenAuth
-from .exceptions import GatewayAuthenticationRequired, GatewaySetupError
+from .exceptions import GatewayAuthenticationRequired
 from .models import Info
 
 
@@ -87,7 +84,8 @@ class GatewayReader:
         self._async_client_verify_ssl = async_client_verify_ssl
         self._async_client_no_verify_ssl = async_client_no_verify_ssl
 
-        self._info = GatewayInfo(self.host, self._async_client_no_verify_ssl)
+        # Populated with the `Info` model during `authenticate()`.
+        self._info: Info | None = None
 
     @property
     def name(self) -> str | None:
@@ -100,17 +98,17 @@ class GatewayReader:
     @property
     def serial_number(self) -> str | None:
         """Return the serial number."""
-        return self._info.serial_number
+        return self._info.serial_number if self._info else None
 
     @property
     def part_number(self) -> str | None:
         """Return the part number."""
-        return self._info.part_number
+        return self._info.part_number if self._info else None
 
     @property
-    def firmware_version(self) -> AwesomeVersion:
+    def firmware_version(self) -> AwesomeVersion | None:
         """Return the firmware version."""
-        return self._info.firmware_version
+        return self._info.firmware_version if self._info else None
 
     async def authenticate(
         self,
@@ -122,6 +120,9 @@ class GatewayReader:
         info = await self._get_info()
 
         assert info.serial_number is not None
+
+        # Store the info model so the serial/part/firmware properties work.
+        self._info = info
 
         self.auth = await self._authenticate(info, username, password, token)
 
@@ -161,11 +162,6 @@ class GatewayReader:
             DESCRIPTION.
 
         """
-        _LOGGER.debug("Starting authentication process...")
-        info = await self._get_info()
-
-        assert info.serial_number is not None
-
         _LOGGER.debug(
             "Gateway info for : "
             + f"part_number: {info.part_number}, "
@@ -174,6 +170,7 @@ class GatewayReader:
             + f"web_tokens: {info.web_tokens}, "
         )
 
+        auth = None
         if info.web_tokens:
             # Firmware using token based authentication.
             if token or (username and password):
@@ -206,8 +203,6 @@ class GatewayReader:
                     password=password,
                 )
 
-
-
         if not auth:
             _LOGGER.error(
                 "You must provide a valid username/password or token "
@@ -222,20 +217,18 @@ class GatewayReader:
 
         return auth
 
-
-
     async def update(self) -> None:
         """Update the gateway's data.
 
         Fetch new data from all required endpoints and update the gateway.
 
         """
+        if self.gateway is None:
+            raise GatewayAuthenticationRequired(
+                "You must authenticate to the gateway before updating."
+            )
+
         await self.gateway.update(self.request)
-
-
-
-
-
 
     async def request(self, endpoint: str) -> httpx.Response:
         """Make a request to the Envoy.
@@ -262,34 +255,17 @@ class GatewayReader:
                 auth=self.auth.auth,
             )
         except httpx.HTTPStatusError as err:
-            if response.status_code == 401 and handle_401:
-                self.auth.resolve_401()
+            if err.response.status_code == 401 and handle_401:
+                await self.auth.resolve_401()
                 return await self._request(endpoint, handle_401=False)
-            else:
-                raise err
+
+            raise
         else:
             return response
 
     async def _async_get(self, url: str, **kwargs):
         """Send a simple HTTP get request."""
-
         return await async_get(url, self._async_client_no_verify_ssl, **kwargs)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     async def _get_info(self) -> Info:
         """Fetch the /info endpoint and return the `Info` model."""
@@ -327,25 +303,12 @@ class GatewayReader:
 
         return gateway
 
-        # _LOGGER.debug("Running gateway probes...")
-
-        # subclass = await self.gateway.probe(self.request)
-        # if subclass:
-        #     self.gateway = subclass
-
-        # _LOGGER.debug(f"Gateway model: {self.gateway.__class__.__name__}")
-
     async def _probe_gateway(self, gateway: EnphaseGateway) -> EnphaseGateway:
-
+        """Run the gateway probes and return the matching subclass."""
         _LOGGER.debug("Running gateway probes...")
 
         subclass = await gateway.probe(self.request)
         if subclass:
-
             return subclass
 
         return gateway
-
-    def _get_async_client(self) -> httpx.AsyncClient:
-        """Return the async httpx client."""
-        return httpx.AsyncClient(verify=False, timeout=5)

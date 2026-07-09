@@ -3,17 +3,12 @@
 from __future__ import annotations
 
 import logging
-# import functools
 from typing import Callable
-
-# import xmltodict
-# from httpx import Response
 
 from .const import AVAILABLE_PROPERTIES
 from .endpoint import GatewayEndpoint
 from .descriptors import (
     PropertyDescriptor,
-    # ResponseDescriptor,
     JsonDescriptor,
     RegexDescriptor,
 )
@@ -108,7 +103,6 @@ def gateway_probe(
             required_endpoint = GatewayEndpoint(endpoint)
         else:
             required_endpoint = None
-        #func.gateway_probe = endpoint
 
         func._is_gateway_probe = True
         func._required_endpoint = required_endpoint
@@ -355,13 +349,6 @@ class EnphaseGateway:
         elif isinstance(data, str) and data == "not_supported":
             return default
         return data
-
-
-
-
-
-
-
 
 
 class EnvoyLegacy(EnphaseGateway):
@@ -629,7 +616,7 @@ class EnvoySMetered(EnvoyS):
                 f"$[?(@.eid=={eid})].activePower",
                 self.data.get("/ivp/meters/readings", {})
             )
-            if prod and cons:
+            if prod is not None and cons is not None:
                 return prod + cons
         elif eid := self.total_consumption_meter:
             return JsonDescriptor.resolve(

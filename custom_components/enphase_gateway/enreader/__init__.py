@@ -1,3 +1,5 @@
-"""__init__.py file."""
+"""Local Enphase gateway reader package."""
 
 from .enreader import GatewayReader
+
+__all__ = ["GatewayReader"]

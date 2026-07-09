@@ -12,20 +12,9 @@ from .enreader.exceptions import (
 
 DOMAIN = "enphase_gateway"
 
-PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR]
+PLATFORMS = [Platform.SENSOR]
 
-ICON = "mdi:flash"
-
-COORDINATOR = "coordinator"
-
-# NAME = "name"
-
-DATA_UPDATE_INTERVAL = {
-    "slow": 120,
-    "moderate": 60,
-    "fast": 30,
-    "super_fast": 15,
-}
+OPTION_DIAGNOSTICS_INCLUDE_FIXTURES = "diagnostics_include_fixtures"
 
 CONFIG_FLOW_USER_ERROR = (
     EnlightenAuthenticationError,
@@ -46,7 +35,7 @@ ALLOWED_ENDPOINTS = [
     "info", "info.xml", "production", "api/v1/production", "production.json",
     "api/v1/production/inverters", "ivp/ensemble/inventory", "home.json",
     "ivp/ensemble/power", "ivp/ensemble/secctrl", "ivp/meters/readings",
-    "auth/check_jwt" "ivp/meters",
+    "auth/check_jwt", "ivp/meters",
 ]
 
 CONF_SERIAL_NUM = "serial_num"

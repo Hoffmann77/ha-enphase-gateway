@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import httpx
 from awesomeversion import AwesomeVersion
 from lxml import etree
 
@@ -31,10 +30,9 @@ class Info:
 
         if (imeter := xml.findtext("device/imeter")) is not None:
             imeter = imeter.lower() == "true"
-            # imeter = bool(imeter)
 
         if (web_tokens := xml.findtext("web-tokens")) is not None:
-            web_tokens = bool(web_tokens)
+            web_tokens = web_tokens.lower() == "true"
 
         return cls(
             serial_number=xml.findtext("device/sn"),

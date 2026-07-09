@@ -10,9 +10,10 @@ from datetime import datetime
 from operator import attrgetter
 
 from homeassistant.core import HomeAssistant
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity import Entity, DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import (
+    AddConfigEntryEntitiesCallback,
+)
 from homeassistant.util import dt as dt_util
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -30,7 +31,10 @@ from homeassistant.const import (
 
 from .const import DOMAIN, CONF_INVERTERS, CONF_ENCHARGE_ENTITIES
 from .entity import GatewayCoordinatorEntity
-from .coordinator import GatewayUpdateCoordinator
+from .coordinator import (
+    GatewayUpdateCoordinator,
+    EnphaseGatewayConfigEntry,
+)
 from .enreader.gateway import EnphaseGateway
 from .enreader.models import (
     EnsemblePower,
@@ -61,7 +65,7 @@ class GatewaySensorEntityDescription(SensorEntityDescription):
 PRODUCTION_SENSORS = (
     GatewaySensorEntityDescription(
         key="production",
-        name="Current Power Production",
+        name="Current power production",
         native_unit_of_measurement=UnitOfPower.WATT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.POWER,
@@ -72,7 +76,7 @@ PRODUCTION_SENSORS = (
     ),
     GatewaySensorEntityDescription(
         key="daily_production",
-        name="Today's Energy Production",
+        name="Energy production today",
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
@@ -83,7 +87,7 @@ PRODUCTION_SENSORS = (
     ),
     GatewaySensorEntityDescription(
         key="seven_days_production",
-        name="Last Seven Days Energy Production",
+        name="Energy production last seven days",
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         suggested_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
@@ -93,7 +97,7 @@ PRODUCTION_SENSORS = (
     ),
     GatewaySensorEntityDescription(
         key="lifetime_production",
-        name="Lifetime Energy Production",
+        name="Lifetime energy production",
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
@@ -108,7 +112,7 @@ PRODUCTION_SENSORS = (
 CONSUMPTION_SENSORS = (
     GatewaySensorEntityDescription(
         key="consumption",
-        name="Current Power Consumption",
+        name="Current power consumption",
         native_unit_of_measurement=UnitOfPower.WATT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.POWER,
@@ -119,7 +123,7 @@ CONSUMPTION_SENSORS = (
     ),
     GatewaySensorEntityDescription(
         key="daily_consumption",
-        name="Today's Energy Consumption",
+        name="Energy consumption today",
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
@@ -130,7 +134,7 @@ CONSUMPTION_SENSORS = (
     ),
     GatewaySensorEntityDescription(
         key="seven_days_consumption",
-        name="Last Seven Days Energy Consumption",
+        name="Energy consumption last seven days",
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         suggested_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
@@ -140,7 +144,7 @@ CONSUMPTION_SENSORS = (
     ),
     GatewaySensorEntityDescription(
         key="lifetime_consumption",
-        name="Lifetime Energy Consumption",
+        name="Lifetime energy consumption",
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.ENERGY,
@@ -188,7 +192,7 @@ GRID_SENSORS = (
     ),
     GatewaySensorEntityDescription(
         key="lifetime_grid_net_import",
-        name="Lifetime net grid import",
+        name="Lifetime grid import",
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
@@ -199,7 +203,7 @@ GRID_SENSORS = (
     ),
     GatewaySensorEntityDescription(
         key="lifetime_grid_net_export",
-        name="Lifetime net grid export",
+        name="Lifetime grid export",
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
@@ -222,19 +226,17 @@ class InverterSensorEntityDescription(SensorEntityDescription):
 INVERTER_SENSORS = (
     InverterSensorEntityDescription(
         key="lastReportWatts",
-        # name="Power",
+        name=None,
         native_unit_of_measurement=UnitOfPower.WATT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.POWER,
         value_fn=lambda inverter: inverter.get("lastReportWatts"),
-        # exists_fn=lambda entry: bool(entry.options.get("pv_signal")),
     ),
     InverterSensorEntityDescription(
         key="lastReportDate",
         name="Last reported",
         device_class=SensorDeviceClass.TIMESTAMP,
         entity_registry_enabled_default=False,
-        # value_fn=lambda inverter: inverter.get("lastReportDate"),
         value_fn=lambda inverter: dt_util.utc_from_timestamp(
             inverter["lastReportDate"]
         ),
@@ -253,7 +255,7 @@ class ACBatterySensorEntityDescription(SensorEntityDescription):
 AC_BATTERY_SENSORS = (
     ACBatterySensorEntityDescription(
         key="acb_whNow",
-        name="AC Battery Capacity",
+        name="AC battery energy",
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.ENERGY_STORAGE,
@@ -262,7 +264,7 @@ AC_BATTERY_SENSORS = (
     ),
     ACBatterySensorEntityDescription(
         key="acb_percentFull",
-        name="AC Battery Soc",
+        name="AC battery state of charge",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.BATTERY,
@@ -271,7 +273,7 @@ AC_BATTERY_SENSORS = (
     ),
     ACBatterySensorEntityDescription(
         key="acb_wNow",
-        name="AC Battery power",
+        name="AC battery power",
         native_unit_of_measurement=UnitOfPower.WATT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.POWER,
@@ -280,7 +282,7 @@ AC_BATTERY_SENSORS = (
     ),
     ACBatterySensorEntityDescription(
         key="acb_charging_power",
-        name="AC Battery charging power",
+        name="AC battery charging power",
         native_unit_of_measurement=UnitOfPower.WATT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.POWER,
@@ -289,7 +291,7 @@ AC_BATTERY_SENSORS = (
     ),
     ACBatterySensorEntityDescription(
         key="acb_discharging_power",
-        name="AC Battery discharging power",
+        name="AC battery discharging power",
         native_unit_of_measurement=UnitOfPower.WATT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.POWER,
@@ -310,7 +312,7 @@ class EnsembleSecctrlEntityDescription(SensorEntityDescription):
 ENSEMBLE_SECCTRL_SENSORS = (
     EnsembleSecctrlEntityDescription(
         key="Enc_max_available_capacity",
-        name="IQ Batteries capacity",
+        name="IQ batteries capacity",
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.ENERGY_STORAGE,
@@ -319,7 +321,7 @@ ENSEMBLE_SECCTRL_SENSORS = (
     ),
     EnsembleSecctrlEntityDescription(
         key="ENC_agg_avail_energy",
-        name="IQ Batteries energy availiable",
+        name="IQ batteries available energy",
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.ENERGY_STORAGE,
@@ -328,7 +330,7 @@ ENSEMBLE_SECCTRL_SENSORS = (
     ),
     EnsembleSecctrlEntityDescription(
         key="ENC_agg_backup_energy",
-        name="IQ Batteries backup capacity",
+        name="IQ batteries backup energy",
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.ENERGY_STORAGE,
@@ -337,7 +339,7 @@ ENSEMBLE_SECCTRL_SENSORS = (
     ),
     EnsembleSecctrlEntityDescription(
         key="ENC_agg_soc",
-        name="IQ Batteries SoC",
+        name="IQ batteries state of charge",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.BATTERY,
@@ -346,7 +348,7 @@ ENSEMBLE_SECCTRL_SENSORS = (
     ),
     EnsembleSecctrlEntityDescription(
         key="ENC_agg_soh",
-        name="IQ Batteries SoH",
+        name="IQ batteries state of health",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda data: data.get("ENC_agg_soh"),
@@ -386,7 +388,7 @@ ENSEMBLE_INVENTORY_SENSORS = (
     ),
     EnsembleInventorySensorEntityDescription(
         key="calculated_capacity",
-        name="Calculated energy availiable",
+        name="Available energy",
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.ENERGY_STORAGE,
@@ -409,7 +411,7 @@ class EnsemblePowerSensorEntityDescription(SensorEntityDescription):
 ENSEMBLE_POWER_SENSORS = (
     EnsemblePowerSensorEntityDescription(
         key="soc",
-        name="SoC",
+        name="State of charge",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.BATTERY,
@@ -458,7 +460,7 @@ ENSEMBLE_POWER_SENSORS = (
 ENSEMBLE_AGG_POWER_SENSORS = (
     EnsemblePowerSensorEntityDescription(
         key="apparent_power_mva_agg",
-        name="Encharge apparent power",
+        name="IQ batteries apparent power",
         native_unit_of_measurement=UnitOfApparentPower.VOLT_AMPERE,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.APPARENT_POWER,
@@ -467,7 +469,7 @@ ENSEMBLE_AGG_POWER_SENSORS = (
     ),
     EnsemblePowerSensorEntityDescription(
         key="real_power_mw_agg",
-        name="Encharge power",
+        name="IQ batteries power",
         native_unit_of_measurement=UnitOfPower.WATT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.POWER,
@@ -476,7 +478,7 @@ ENSEMBLE_AGG_POWER_SENSORS = (
     ),
     EnsemblePowerSensorEntityDescription(
         key="charging_power_mw_agg",
-        name="Encharge charging power",
+        name="IQ batteries charging power",
         native_unit_of_measurement=UnitOfPower.WATT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.POWER,
@@ -485,7 +487,7 @@ ENSEMBLE_AGG_POWER_SENSORS = (
     ),
     EnsemblePowerSensorEntityDescription(
         key="discharging_power_mw_agg",
-        name="Encharge discharging power",
+        name="IQ batteries discharging power",
         native_unit_of_measurement=UnitOfPower.WATT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.POWER,
@@ -497,12 +499,11 @@ ENSEMBLE_AGG_POWER_SENSORS = (
 
 async def async_setup_entry(
         hass: HomeAssistant,
-        config_entry: ConfigEntry,
-        async_add_entities: AddEntitiesCallback
+        config_entry: EnphaseGatewayConfigEntry,
+        async_add_entities: AddConfigEntryEntitiesCallback
 ) -> None:
     """Set up envoy sensor platform."""
     coordinator = config_entry.runtime_data
-    # coordinator = hass.data[DOMAIN][config_entry.entry_id]
     options = config_entry.options
     conf_inverters = options.get(CONF_INVERTERS, False)
     conf_encharge_entity = options.get(CONF_ENCHARGE_ENTITIES, False)
@@ -622,7 +623,8 @@ class InverterEntity(GatewaySensorEntity):
         """Initialize Gateway inverter entity."""
         super().__init__(coordinator, description)
         self._serial_number = serial_number
-        # self._attr_unique_id = f"{serial_number}_{description.key}"
+        self._as_device = as_device
+        self._attr_unique_id = f"{serial_number}_{description.key}"
         if as_device:
             self._attr_device_info = DeviceInfo(
                 identifiers={(DOMAIN, str(self._serial_number))},
@@ -633,26 +635,22 @@ class InverterEntity(GatewaySensorEntity):
             )
 
     @property
-    def unique_id(self) -> str:
-        """Return the entity's unique_id."""
-        # TODO: improve unique ids.
-        # Originally there was only one inverter sensor, so we don't want to
-        # break existing installations by changing the unique_id.
-        if self.entity_description.key == "lastReportWatts":
-            return self._serial_number
-        else:
-            return f"{self._serial_number}_{self.entity_description.key}"
-
-    @property
     def name(self):
         """Return the entity name."""
-        return f"Inverter {self._serial_number}"
-        # return f"{self.entity_description.name} {self._serial_number}"
+        if self._as_device:
+            # Own device: the device name identifies the inverter, so use the
+            # plain description name (None for the primary power sensor).
+            return self.entity_description.name
+        # On the gateway device the serial must disambiguate the name.
+        base = f"Inverter {self._serial_number}"
+        if self.entity_description.key == "lastReportWatts":
+            return base
+        return f"{base} {self.entity_description.name.lower()}"
 
     @property
     def native_value(self):
         """Return the state of the sensor."""
-        inverters = self.data.get("inverters")
+        inverters = self.data.inverters
         assert inverters is not None
         if self._serial_number not in inverters:
             _LOGGER.debug(
@@ -697,13 +695,6 @@ class EnsembleAggregatedPowerEntity(GatewaySensorEntity):
     entity_description: EnsemblePowerSensorEntityDescription
 
     @property
-    def unique_id(self) -> str:
-        """Return the entity's unique_id."""
-        # uses `encharge` as prefix for legacy support. (05/2024)
-        key = f"encharge_{self.entity_description.key}"
-        return f"{self.gateway_serial_num}_{key}"
-
-    @property
     def native_value(self) -> int | None:
         """Return the state of the sensor."""
         ensemble_power = self.data.ensemble_power
@@ -734,9 +725,9 @@ class StorageSensorEntity(GatewaySensorEntity):
         """Return device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, str(self._serial_number))},
-            name=f"Encharge {self._serial_number}",
+            name=f"IQ Battery {self._serial_number}",
             manufacturer="Enphase",
-            model="Encharge",
+            model="IQ Battery",
             via_device=(DOMAIN, self.gateway_serial_num)
         )
 

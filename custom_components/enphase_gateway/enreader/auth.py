@@ -503,6 +503,11 @@ class EnphaseTokenAuth(GatewayAuth):
                     request=err.request,
                     response=err.response,
                 ) from err
+            raise EnlightenCommunicationError(
+                "The Enlighten platform returned an unexpected HTTP status "
+                f"code: {err.response.status_code}",
+                request=err.request,
+            ) from err
         else:
             return response
 

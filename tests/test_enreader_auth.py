@@ -27,6 +27,8 @@ from .enreader_common import (
     GatewayFixture,
 )
 from custom_components.enphase_gateway.enreader.exceptions import (
+    EnlightenAuthenticationError,
+    EnlightenCommunicationError,
     GatewayAuthenticationRequired,
 )
 
@@ -140,6 +142,47 @@ async def test_token_auth(version: str, gateway_class) -> None:
 
     assert isinstance(enreader.auth, EnphaseTokenAuth)
     assert isinstance(enreader.gateway, gateway_class)
+
+
+@pytest.mark.parametrize(
+    "status_code, expected_error",
+    [
+         (401, EnlightenAuthenticationError),
+         (403, EnlightenCommunicationError),
+         (500, EnlightenCommunicationError),
+         (503, EnlightenCommunicationError),
+    ],
+)
+@pytest.mark.asyncio
+@respx.mock
+async def test_token_retrieval_enlighten_error(
+        status_code: int,
+        expected_error,
+) -> None:
+    """Test that Enlighten HTTP errors raise a meaningful exception.
+
+    A non-401 error from the Enlighten login endpoint previously caused
+    `_async_post_enlighten` to return `None`, which then crashed with an
+    opaque `AttributeError: 'NoneType' object has no attribute 'text'`.
+    """
+    fixture = GatewayFixture("7.6.175_standard")
+    fixture.mock_info_endpoint()
+
+    # Mock the Enlighten login endpoint to return an HTTP error.
+    respx.post(
+        "https://enlighten.enphaseenergy.com/login/login.json?"
+    ).mock(return_value=Response(status_code))
+
+    enreader = GatewayReader(host="127.0.0.1")
+
+    info = await enreader._get_info()
+    gateway = await enreader._detect_gateway(info)
+    fixture.mock_endpoints(
+        [endpoint.path for endpoint in gateway.probing_endpoints]
+    )
+
+    with pytest.raises(expected_error):
+        await enreader.authenticate("username", "password")
 
 
 # expired token and no enlighten credentials
